@@ -1,0 +1,156 @@
+// src/components/TabInventario.jsx
+import { useState } from "react";
+import { useStore } from "../data/store.jsx";
+import Modal from "./Modal";
+
+function getColor(pct) {
+  if (pct < 20) return "#e24b4a";
+  if (pct < 45) return "#ef9f27";
+  return "#1d9e75";
+}
+
+const EMPTY = { nombre: "", cantidad: 0, max: 100, unidad: "u" };
+const UNIDADES = ["u", "kg", "l", "caja"];
+
+function StockRow({ item, onEdit, onDelete }) {
+  const pct = Math.round((item.cantidad / item.max) * 100);
+  const color = getColor(pct);
+  return (
+    <div className="stock-row">
+      <span className="stock-name">{item.nombre}</span>
+      <div className="stock-bar-bg">
+        <div className="stock-bar" style={{ width: `${pct}%`, background: color }} />
+      </div>
+      <span className="stock-qty">{item.cantidad}/{item.max} {item.unidad}</span>
+      <span className="stock-pct" style={{ color }}>{pct}%</span>
+      <div style={{ display: "flex", gap: 5, marginLeft: 8 }}>
+        <button className="btn" style={{ padding: "2px 8px", fontSize: 11 }} onClick={() => onEdit(item)}>Editar</button>
+        <button className="btn" style={{ padding: "2px 8px", fontSize: 11, color: "var(--red)", borderColor: "var(--red)" }} onClick={() => onDelete(item)}>Eliminar</button>
+      </div>
+    </div>
+  );
+}
+
+export default function TabInventario() {
+  const { stock, updateStock, addStock, deleteStock } = useStore();
+  const [modal, setModal] = useState(null);
+  const [form, setForm] = useState(EMPTY);
+  const [errors, setErrors] = useState({});
+
+  const criticos = stock.filter((s) => (s.cantidad / s.max) < 0.20);
+  const bajos    = stock.filter((s) => { const p = s.cantidad / s.max; return p >= 0.20 && p < 0.45; });
+
+  const openAdd  = () => { setForm(EMPTY); setErrors({}); setModal({ mode: "add" }); };
+  const openEdit = (item) => { setForm({ ...item }); setErrors({}); setModal({ mode: "edit", data: item }); };
+  const openDel  = (item) => setModal({ mode: "delete", data: item });
+  const closeModal = () => setModal(null);
+  const setField = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  const validate = () => {
+    const e = {};
+    if (!form.nombre.trim()) e.nombre = "El nombre es obligatorio";
+    if (form.cantidad < 0) e.cantidad = "Cantidad no puede ser negativa";
+    if (!form.max || form.max <= 0) e.max = "Máximo debe ser mayor a 0";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleSave = () => {
+    if (!validate()) return;
+    if (modal.mode === "add") addStock(form);
+    else updateStock(modal.data.id, form);
+    closeModal();
+  };
+
+  return (
+    <div>
+      <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div>
+          <div className="page-title">Inventario</div>
+          <div className="page-desc">{stock.length} productos · {criticos.length} críticos · {bajos.length} bajos</div>
+        </div>
+        <button className="btn btn-primary" onClick={openAdd}>+ Agregar producto</button>
+      </div>
+
+      {criticos.length > 0 && (
+        <div style={{ background: "var(--red-light)", border: "1px solid #f09595", borderRadius: 10, padding: "0.75rem 1rem", marginBottom: "1rem", fontSize: 13, color: "#791f1f" }}>
+          ⚠ <strong>{criticos.length} producto{criticos.length > 1 ? "s" : ""} en stock crítico:</strong>{" "}
+          {criticos.map((c) => c.nombre).join(", ")}
+        </div>
+      )}
+      {bajos.length > 0 && (
+        <div style={{ background: "var(--amber-light)", border: "1px solid #fac775", borderRadius: 10, padding: "0.75rem 1rem", marginBottom: "1rem", fontSize: 13, color: "#633806" }}>
+          ℹ <strong>{bajos.length} producto{bajos.length > 1 ? "s" : ""} con stock bajo:</strong>{" "}
+          {bajos.map((b) => b.nombre).join(", ")}
+        </div>
+      )}
+
+      <div className="card">
+        <div className="card-header">
+          <div>
+            <div className="card-title">Stock de productos</div>
+            <div className="card-sub">{stock.length} productos registrados</div>
+          </div>
+          <div className="chart-legend">
+            {[["#1d9e75","OK"],["#ef9f27","Bajo"],["#e24b4a","Crítico"]].map(([c,l]) => (
+              <span key={l} className="legend-item">
+                <span className="legend-sq" style={{ background: c }} />{l}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="stock-list">
+          {stock.map((s) => (
+            <StockRow key={s.id} item={s} onEdit={openEdit} onDelete={openDel} />
+          ))}
+        </div>
+      </div>
+
+      {/* Modal Alta / Edición */}
+      {(modal?.mode === "add" || modal?.mode === "edit") && (
+        <Modal title={modal.mode === "add" ? "Nuevo producto" : `Editar — ${modal.data.nombre}`} onClose={closeModal} size="sm">
+          <div className="form-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
+            <div className="form-group form-full">
+              <label className="form-label">Nombre *</label>
+              <input className={`form-input ${errors.nombre ? "input-error" : ""}`} type="text" value={form.nombre} onChange={(e) => setField("nombre", e.target.value)} placeholder="Ej: Leña" />
+              {errors.nombre && <span className="form-error">{errors.nombre}</span>}
+            </div>
+            <div className="form-group">
+              <label className="form-label">Cantidad actual</label>
+              <input className={`form-input ${errors.cantidad ? "input-error" : ""}`} type="number" min="0" value={form.cantidad} onChange={(e) => setField("cantidad", parseInt(e.target.value))} />
+              {errors.cantidad && <span className="form-error">{errors.cantidad}</span>}
+            </div>
+            <div className="form-group">
+              <label className="form-label">Máximo *</label>
+              <input className={`form-input ${errors.max ? "input-error" : ""}`} type="number" min="1" value={form.max} onChange={(e) => setField("max", parseInt(e.target.value))} />
+              {errors.max && <span className="form-error">{errors.max}</span>}
+            </div>
+            <div className="form-group">
+              <label className="form-label">Unidad</label>
+              <select className="form-input" value={form.unidad} onChange={(e) => setField("unidad", e.target.value)}>
+                {UNIDADES.map((u) => <option key={u}>{u}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: "1.25rem" }}>
+            <button className="btn" onClick={closeModal}>Cancelar</button>
+            <button className="btn btn-primary" onClick={handleSave}>{modal.mode === "add" ? "Guardar" : "Actualizar"}</button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal Eliminar */}
+      {modal?.mode === "delete" && (
+        <Modal title="Eliminar producto" onClose={closeModal} size="sm">
+          <p style={{ color: "var(--gray-600)", marginBottom: "1rem" }}>
+            ¿Eliminás <strong>{modal.data.nombre}</strong> del inventario? Esta acción no se puede deshacer.
+          </p>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+            <button className="btn" onClick={closeModal}>Cancelar</button>
+            <button className="btn" style={{ background: "var(--red)", color: "#fff", borderColor: "var(--red)" }} onClick={() => { deleteStock(modal.data.id); closeModal(); }}>Eliminar</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}

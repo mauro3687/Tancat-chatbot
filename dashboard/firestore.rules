@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Config — solo lectura pública, escritura solo autenticados
+    match /config/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Reservas — lectura y escritura pública (el chatbot crea reservas sin auth)
+    match /reservas/{docId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if request.auth != null;
+    }
+
+    // Clientes — solo autenticados
+    match /clientes/{docId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Ventas — solo autenticados
+    match /ventas/{docId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Stock — solo autenticados
+    match /stock/{docId} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
