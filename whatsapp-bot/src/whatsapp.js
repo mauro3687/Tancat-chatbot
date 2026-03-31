@@ -10,6 +10,7 @@ const getHeaders = () => ({
 
 const getPhoneId = () => process.env.PHONE_NUMBER_ID;
 
+
 const formatNumber = (to) => to.startsWith("549") ? "54" + to.substring(3) : to;
 
 export async function enviarMensaje(to, texto) {
@@ -30,9 +31,9 @@ export async function enviarBotones(to, texto, opciones) {
       type: "button",
       body: { text: texto },
       action: {
-        buttons: opciones.map((opt, i) => ({
+        buttons: opciones.slice(0, 3).map((opt, i) => ({
           type: "reply",
-          reply: { id: `btn_${i}`, title: opt }
+          reply: { id: `btn_${i}`, title: opt.substring(0, 20) }
         }))
       }
     }
@@ -48,17 +49,29 @@ export async function enviarLista(to, texto, tituloBoton, filas) {
       type: "list",
       body: { text: texto },
       action: {
-        button: tituloBoton,
-        sections: [{ title: "Horarios", rows: filas.map((f, i) => ({ id: `h_${i}`, title: f })) }]
+        button: tituloBoton.substring(0, 20),
+        sections: [{ 
+          title: "Horarios Disponibles", 
+          rows: filas.slice(0, 10).map((f, i) => ({ 
+            id: `h_${i}`, 
+            title: f.substring(0, 24) 
+          })) 
+        }]
       }
     }
   }, { headers: getHeaders() });
 }
 
+
 export async function marcarLeido(messageId) {
-  await axios.post(`${BASE_URL}/${getPhoneId()}/messages`, {
-    messaging_product: "whatsapp",
-    status: "read",
-    message_id: messageId
-  }, { headers: getHeaders() }).catch(() => {});
+  try {
+    await axios.post(`${BASE_URL}/${getPhoneId()}/messages`, {
+      messaging_product: "whatsapp",
+      status: "read",
+      message_id: messageId
+    }, { headers: getHeaders() });
+  } catch (error) {
+    
+    console.error("⚠️ No se pudo marcar como leído:", messageId);
+  }
 }

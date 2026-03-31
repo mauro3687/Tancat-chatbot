@@ -6,7 +6,7 @@ export function getDb() {
   if (db) return db;
   if (!admin.apps.length) {
     try {
-      // 🔐 Decodificamos el Base64 que pusiste en el .env para evitar errores de JSON
+      
       const b64 = process.env.FIREBASE_SERVICE_ACCOUNT_B64;
       const decoded = Buffer.from(b64, 'base64').toString('utf-8');
       const serviceAccount = JSON.parse(decoded);
