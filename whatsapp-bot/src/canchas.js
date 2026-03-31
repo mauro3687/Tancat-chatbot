@@ -14,6 +14,28 @@ export const LOCALES = {
   "local-2": { nombre:"TanCat — Local Norte",  direccion:"Ruta 36 Km 45, Córdoba"  },
 };
 
+export async function enviarBotones(to, texto, botones) {
+  const phoneId = process.env.PHONE_NUMBER_ID;
+  const token = process.env.WHATSAPP_TOKEN;
+
+  await axios.post(`${BASE_URL}/${phoneId}/messages`, {
+    messaging_product: "whatsapp",
+    to,
+    type: "interactive",
+    interactive: {
+      type: "button",
+      body: { text: texto },
+      action: {
+        buttons: botones.map((btn, index) => ({
+          type: "reply",
+          reply: { id: `btn_${index}`, title: btn }
+        }))
+      }
+    }
+  }, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+}
 export const HORARIOS = Array.from({ length:14 }, (_,i) => {
   const h = 8 + i;
   return `${String(h).padStart(2,"0")}:00 — ${String(h+1).padStart(2,"0")}:00`;

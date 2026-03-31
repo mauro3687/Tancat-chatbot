@@ -1,4 +1,3 @@
-// src/firebase/client.js — Firebase Admin SDK
 import admin from "firebase-admin";
 
 let db = null;
@@ -6,12 +5,25 @@ let db = null;
 export function getDb() {
   if (db) return db;
   if (!admin.apps.length) {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+    try {
+      // 🔐 Decodificamos el Base64 que pusiste en el .env para evitar errores de JSON
+      const b64 = process.env.FIREBASE_SERVICE_ACCOUNT_B64;
+      const decoded = Buffer.from(b64, 'base64').toString('utf-8');
+      const serviceAccount = JSON.parse(decoded);
+      
+      admin.initializeApp({ 
+        credential: admin.credential.cert(serviceAccount) 
+      });
+    } catch (error) {
+      console.error("❌ ERROR FATAL EN FIREBASE JSON:", error.message);
+      throw error;
+    }
   }
   db = admin.firestore();
   return db;
 }
+
+// --- GESTIÓN DE RESERVAS ---
 
 export async function getReservas() {
   const snap = await getDb().collection("reservas").orderBy("creadoEn","desc").get();
@@ -42,6 +54,20 @@ export async function actualizarReserva(id, data) {
     ...data,
     actualizadoEn: admin.firestore.FieldValue.serverTimestamp(),
   });
+}
+
+// --- GESTIÓN DE USUARIOS (REGISTRO TANCAT) ---
+
+export async function buscarUsuario(phone) {
+  const doc = await getDb().collection("usuarios").doc(phone).get();
+  return doc.exists ? doc.data() : null;
+}
+
+export async function guardarUsuario(phone, datos) {
+  await getDb().collection("usuarios").doc(phone).set({
+    ...datos,
+    actualizadoEn: admin.firestore.FieldValue.serverTimestamp()
+  }, { merge: true });
 }
 
 export async function getConfig() {
