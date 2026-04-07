@@ -25,7 +25,7 @@ const navItems = [
   {
     label: "Inteligencia",
     items: [
-      { id: "ia",       icon: "🤖", text: "IA & Promociones" },
+      { id: "ia",       icon: "🤖", text: "Promociones" },
       { id: "reportes", icon: "📈", text: "Reportes"         },
     ],
   },
