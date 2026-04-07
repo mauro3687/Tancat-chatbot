@@ -1,48 +1,48 @@
 // src/components/LoadingScreen.jsx
-import { logoTancat } from "../assets/images/index.js";
-
 export default function LoadingScreen() {
   return (
     <div style={{
       position: "fixed", inset: 0,
-      background: "#121212",
+      background: "#0F1117",
       display: "flex", flexDirection: "column",
       alignItems: "center", justifyContent: "center",
       zIndex: 9999,
     }}>
-      <img
-        src={logoTancat}
-        alt="TanCat Deportes"
-        style={{
-          width: 160, height: "auto",
-          marginBottom: 28,
-          filter: "brightness(0) invert(1)",
-          opacity: 0.9,
-        }}
-      />
       <div style={{
-        fontFamily: "DM Sans, sans-serif",
-        fontSize: 13, color: "#6E6E6E",
-        marginBottom: 16,
+        width: 48, height: 48,
+        borderRadius: 12,
+        background: "#00C49A",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontFamily: "Inter, sans-serif",
+        fontWeight: 700, fontSize: 18, color: "#002820",
+        marginBottom: 20,
+      }}>
+        TC
+      </div>
+      <div style={{
+        fontFamily: "Inter, sans-serif",
+        fontSize: 13, color: "#555C72",
+        marginBottom: 18,
       }}>
         Conectando con Firebase...
       </div>
       <div style={{
-        width: 180, height: 3,
-        background: "rgba(255,255,255,0.08)",
+        width: 140, height: 2,
+        background: "rgba(255,255,255,0.06)",
         borderRadius: 2, overflow: "hidden",
       }}>
         <div style={{
-          height: "100%", background: "#00C853",
+          height: "100%",
+          background: "#00C49A",
           borderRadius: 2,
           animation: "loadbar 1.4s ease infinite",
         }} />
       </div>
       <style>{`
         @keyframes loadbar {
-          0%   { width: 0% }
-          60%  { width: 85% }
-          100% { width: 100% }
+          0%   { width: 0%;   }
+          60%  { width: 80%;  }
+          100% { width: 100%; }
         }
       `}</style>
     </div>

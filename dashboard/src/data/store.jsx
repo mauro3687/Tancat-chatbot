@@ -14,6 +14,12 @@ export const SERVICIOS = [
   { nombre: "Voley",    precio: 10000 },
 ];
 
+// ── Usuarios del sistema ──────────────────────────────────────────────────────
+export const USUARIOS = [
+  { id: "admin",     nombre: "Admin",         rol: "admin",     password: "admin123" },
+  { id: "encargado", nombre: "Enc. Sucursal",  rol: "encargado", password: "enc123"   },
+];
+
 // ── Context ───────────────────────────────────────────────────────────────────
 const StoreContext = createContext(null);
 
@@ -48,6 +54,16 @@ function useCollection(colName, ordenarPor = null) {
 
 // ── Provider principal ────────────────────────────────────────────────────────
 export function StoreProvider({ children }) {
+  const [currentUser, setCurrentUser] = useState(null);
+
+  const login = (id, password) => {
+    const u = USUARIOS.find((u) => u.id === id && u.password === password);
+    if (u) { setCurrentUser(u); return true; }
+    return false;
+  };
+
+  const logout = () => setCurrentUser(null);
+
   const { data: reservas,  loading: loadingReservas  } = useCollection("reservas",  "creadoEn");
   const { data: clientes,  loading: loadingClientes  } = useCollection("clientes",  "creadoEn");
   const { data: ventas,    loading: loadingVentas    } = useCollection("ventas",    "creadoEn");
@@ -57,6 +73,7 @@ export function StoreProvider({ children }) {
     email: "info@tancat.com.ar", telefono: "351-000-0000",
     direccion: "Ruta 36 Km 45, Córdoba", checkin: "14:00", checkout: "11:00",
     atencion: "08:00 - 22:00", sena: 30, cancelacion: 48,
+    precios: { padel: 8000, basquet: 12000, voley: 10000 },
   });
 
   const loading = loadingReservas || loadingClientes || loadingVentas || loadingStock;
@@ -164,6 +181,8 @@ export function StoreProvider({ children }) {
 
   return (
     <StoreContext.Provider value={{
+      // Auth
+      currentUser, login, logout,
       // Datos
       reservas, clientes, ventas, stock, config, loading,
       // Reservas
