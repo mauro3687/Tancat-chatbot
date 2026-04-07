@@ -4,7 +4,7 @@ import {
   asignarCancha, getHorariosDisponibles, parsearFecha, formatFecha
 } from "../canchas.js";
 import { getSession, setSession, resetFlow } from "./sessionManager.js";
-import { getReservas, buscarReserva, crearReserva, actualizarReserva } from "../firebase/client.js";
+import { getReservas, buscarReserva, crearReserva, actualizarReserva, upsertCliente } from "../firebase/client.js";
 
 // ── Detectar intención del mensaje ────────────────────────────────────────────
 function detectarIntent(msg) {
@@ -185,10 +185,15 @@ async function continuarFlujo(phone, session, msg) {
       const sena = Math.round(precio * SENA_PCT);
       const local = LOCALES[cancha.localId];
 
-      const reservaData = {
-        cliente: data.nombre,
+      // Registrar/actualizar cliente en Firestore
+      const clienteId = await upsertCliente({
+        nombre: data.nombre,
         email,
         telefono: data.telefono,
+      });
+
+      const reservaData = {
+        clienteId,
         deporte: data.deporte,
         canchaId: cancha.id,
         cancha: cancha.nombre,

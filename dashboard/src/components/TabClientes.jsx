@@ -14,7 +14,12 @@ export default function TabClientes() {
 
   const filtered = clientes.filter((c) => {
     const q = search.toLowerCase();
-    return c.nombre.toLowerCase().includes(q) || c.email.toLowerCase().includes(q) || c.ciudad.toLowerCase().includes(q);
+    return (
+      (c.nombre || "").toLowerCase().includes(q) ||
+      (c.email || "").toLowerCase().includes(q) ||
+      (c.ciudad || "").toLowerCase().includes(q) ||
+      (c.telefono || "").includes(q)
+    );
   });
 
   const openAdd = () => { setForm(EMPTY); setErrors({}); setModal({ mode: "add" }); };
@@ -74,10 +79,23 @@ export default function TabClientes() {
               ) : filtered.map((c) => (
                 <tr key={c.id}>
                   <td><span className="mono">{c.id}</span></td>
-                  <td style={{ fontWeight: 500 }}>{c.nombre}</td>
-                  <td style={{ color: "var(--gray-600)" }}>{c.email}</td>
-                  <td>{c.telefono}</td>
-                  <td>{c.ciudad}</td>
+                  <td style={{ fontWeight: 500 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                      {c.nombre}
+                      {c.origen === "whatsapp" && (
+                        <span style={{
+                          fontSize: 10, fontWeight: 600,
+                          background: "rgba(37,211,102,0.12)",
+                          color: "#25D366",
+                          border: "1px solid rgba(37,211,102,0.25)",
+                          padding: "1px 7px", borderRadius: 20,
+                        }}>WA</span>
+                      )}
+                    </div>
+                  </td>
+                  <td style={{ color: "var(--gray-600)" }}>{c.email || "—"}</td>
+                  <td>{c.telefono || "—"}</td>
+                  <td>{c.ciudad || "—"}</td>
                   <td style={{ textAlign: "center" }}>
                     <span style={{ background: "var(--blue-light)", color: "var(--blue)", padding: "2px 10px", borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
                       {getReservasCliente(c.id).length}

@@ -1,5 +1,4 @@
-// src/components/TabReportes.jsx — Reportes con gráficos y exportación
-import { useEffect, useRef } from "react";
+// src/components/TabReportes.jsx — Reportes con gráficos CSS y exportación
 import { useStore } from "../data/store.jsx";
 
 function exportCSV(data, filename) {
@@ -13,75 +12,107 @@ function exportCSV(data, filename) {
   URL.revokeObjectURL(url);
 }
 
-function ChartBarras({ id, labels, datasets, height = 220 }) {
-  const ref = useRef(null);
-  const chartRef = useRef(null);
-  useEffect(() => {
-    if (!window.Chart) return;
-    if (chartRef.current) chartRef.current.destroy();
-    chartRef.current = new window.Chart(ref.current, {
-      type: "bar",
-      data: { labels, datasets },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { grid: { color: "rgba(0,0,0,0.05)" }, ticks: { font: { size: 11, family: "DM Sans" } } },
-          x: { grid: { display: false }, ticks: { font: { size: 11, family: "DM Sans" } } },
-        },
-      },
-    });
-    return () => chartRef.current?.destroy();
-  }, [labels, datasets]);
-  return <div style={{ position: "relative", height }}><canvas ref={ref} /></div>;
+// Gráfico de barras verticales en CSS
+function BarChart({ labels, values, color = "var(--accent)", height = 180 }) {
+  const max = Math.max(...values, 1);
+  return (
+    <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height, paddingTop: 8 }}>
+      {labels.map((label, i) => {
+        const pct = (values[i] / max) * 100;
+        return (
+          <div key={label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, height: "100%" }}>
+            <span style={{ fontSize: 10, color: "var(--text-muted)", minHeight: 16, display: "flex", alignItems: "flex-end" }}>
+              {values[i] > 0 ? values[i].toLocaleString("es-AR") : ""}
+            </span>
+            <div style={{ flex: 1, width: "100%", display: "flex", alignItems: "flex-end" }}>
+              <div style={{
+                width: "100%",
+                height: `${pct}%`,
+                minHeight: pct > 0 ? 3 : 0,
+                background: color,
+                borderRadius: "3px 3px 0 0",
+                transition: "height 0.4s ease",
+              }} />
+            </div>
+            <span style={{ fontSize: 10, color: "var(--text-muted)", textAlign: "center", lineHeight: 1.2 }}>
+              {label}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
-function ChartDona({ id, labels, data, colors, height = 180 }) {
-  const ref = useRef(null);
-  const chartRef = useRef(null);
-  useEffect(() => {
-    if (!window.Chart) return;
-    if (chartRef.current) chartRef.current.destroy();
-    chartRef.current = new window.Chart(ref.current, {
-      type: "doughnut",
-      data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0, hoverOffset: 4 }] },
-      options: { responsive: true, maintainAspectRatio: false, cutout: "68%", plugins: { legend: { display: false } } },
-    });
-    return () => chartRef.current?.destroy();
-  }, [data]);
-  return <div style={{ position: "relative", height }}><canvas ref={ref} /></div>;
+// Barras horizontales con porcentaje
+function HBarChart({ items }) {
+  const max = Math.max(...items.map((i) => i.value), 1);
+  const total = items.reduce((s, i) => s + i.value, 0);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 8 }}>
+      {items.map((item) => {
+        const pct = total > 0 ? Math.round((item.value / total) * 100) : 0;
+        return (
+          <div key={item.label}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+              <span style={{ fontSize: 12, color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ width: 8, height: 8, borderRadius: 2, background: item.color, flexShrink: 0, display: "inline-block" }} />
+                {item.label}
+              </span>
+              <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                {item.value} <span style={{ color: "var(--text-muted)", fontSize: 11 }}>({pct}%)</span>
+              </span>
+            </div>
+            <div style={{ height: 6, background: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden" }}>
+              <div style={{
+                height: "100%",
+                width: `${(item.value / max) * 100}%`,
+                background: item.color,
+                borderRadius: 3,
+                transition: "width 0.4s ease",
+              }} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 export default function TabReportes() {
   const { reservas, ventas, clientes } = useStore();
 
-  useEffect(() => {
-    if (window.Chart) return;
-    const s = document.createElement("script");
-    s.src = "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js";
-    document.head.appendChild(s);
-  }, []);
+  // Reservas por deporte
+  const deportes = ["padel", "basquet", "voley"];
+  const DEPORTE_LABEL = { padel: "Pádel", basquet: "Básquet", voley: "Voley" };
+  const reservasPorDeporte = deportes.map((d) =>
+    reservas.filter((r) => r.deporte === d || r.servicio?.toLowerCase().includes(d.replace("á","a").replace("é","e"))).length
+  );
 
-  // Reservas por servicio
-  const servicios = [...new Set(reservas.map((r) => r.servicio))];
-  const reservasPorServicio = servicios.map((s) => reservas.filter((r) => r.servicio === s).length);
-
-  // Ventas por mes
+  // Ventas por mes (año actual)
   const meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
   const ventasPorMes = meses.map((_, i) =>
-    ventas.filter((v) => v.fecha && new Date(v.fecha).getMonth() === i).reduce((s, v) => s + Number(v.monto), 0)
+    ventas.filter((v) => v.fecha && new Date(v.fecha).getMonth() === i).reduce((s, v) => s + Number(v.monto || 0), 0)
   );
 
   // Estados reservas
-  const estados = ["Confirmada", "Pendiente", "Cancelada"];
-  const countEstados = estados.map((e) => reservas.filter((r) => r.estado === e).length);
+  const countEstados = [
+    { label: "Confirmada", value: reservas.filter((r) => r.estado === "Confirmada").length, color: "var(--accent)" },
+    { label: "Pendiente",  value: reservas.filter((r) => r.estado === "Pendiente").length,  color: "var(--amber)" },
+    { label: "Cancelada",  value: reservas.filter((r) => r.estado === "Cancelada").length,  color: "var(--red)" },
+  ];
 
   // Métodos de pago
-  const metodos = ["Efectivo", "Transferencia", "Tarjeta"];
-  const countMetodos = metodos.map((m) => ventas.filter((v) => v.metodoPago === m).length);
+  const countMetodos = [
+    { label: "Efectivo",       value: ventas.filter((v) => v.metodoPago === "Efectivo").length,       color: "var(--accent)" },
+    { label: "Transferencia",  value: ventas.filter((v) => v.metodoPago === "Transferencia").length,  color: "var(--blue)" },
+    { label: "Tarjeta",        value: ventas.filter((v) => v.metodoPago === "Tarjeta").length,        color: "var(--amber)" },
+  ];
 
-  const totalVentas = ventas.reduce((s, v) => s + Number(v.monto), 0);
+  const totalVentas = ventas.reduce((s, v) => s + Number(v.monto || 0), 0);
   const ticketPromedio = ventas.length ? Math.round(totalVentas / ventas.length) : 0;
+
+  const fmt = (n) => new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
 
   return (
     <div>
@@ -91,19 +122,19 @@ export default function TabReportes() {
           <div className="page-desc">Análisis y exportación de datos</div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="btn" onClick={() => exportCSV(reservas, "reservas-tancat.csv")}>↓ Exportar reservas</button>
-          <button className="btn" onClick={() => exportCSV(ventas, "ventas-tancat.csv")}>↓ Exportar ventas</button>
-          <button className="btn" onClick={() => exportCSV(clientes, "clientes-tancat.csv")}>↓ Exportar clientes</button>
+          <button className="btn" onClick={() => exportCSV(reservas, "reservas-tancat.csv")}>↓ Reservas</button>
+          <button className="btn" onClick={() => exportCSV(ventas, "ventas-tancat.csv")}>↓ Ventas</button>
+          <button className="btn" onClick={() => exportCSV(clientes, "clientes-tancat.csv")}>↓ Clientes</button>
         </div>
       </div>
 
       {/* KPIs */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 10, marginBottom: "1.25rem" }}>
         {[
-          { label: "Total reservas", val: reservas.length },
-          { label: "Ingresos totales", val: "$" + totalVentas.toLocaleString("es-AR") },
+          { label: "Total reservas",   val: reservas.length },
+          { label: "Ingresos totales", val: fmt(totalVentas) },
           { label: "Clientes activos", val: clientes.length },
-          { label: "Ticket promedio", val: "$" + ticketPromedio.toLocaleString("es-AR") },
+          { label: "Ticket promedio",  val: fmt(ticketPromedio) },
         ].map((m) => (
           <div key={m.label} className="metric-card" style={{ padding: "0.85rem 1rem" }}>
             <div className="metric-label">{m.label}</div>
@@ -113,58 +144,44 @@ export default function TabReportes() {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-        {/* Reservas por servicio */}
+        {/* Reservas por deporte */}
         <div className="card">
           <div className="card-header">
-            <div className="card-title">Reservas por servicio</div>
+            <div>
+              <div className="card-title">Reservas por deporte</div>
+              <div className="card-sub">Total de reservas registradas</div>
+            </div>
           </div>
-          <ChartBarras
-            id="svc"
-            labels={servicios.map((s) => s.split(" ").slice(0, 2).join(" "))}
-            datasets={[{ data: reservasPorServicio, backgroundColor: "#1d9e75", borderRadius: 5 }]}
-          />
+          <BarChart labels={deportes.map((d) => DEPORTE_LABEL[d])} values={reservasPorDeporte} color="var(--accent)" />
         </div>
 
-        {/* Ventas por mes */}
+        {/* Ingresos por mes */}
         <div className="card">
           <div className="card-header">
-            <div className="card-title">Ingresos por mes ($)</div>
+            <div>
+              <div className="card-title">Ingresos por mes</div>
+              <div className="card-sub">Año {new Date().getFullYear()}</div>
+            </div>
           </div>
-          <ChartBarras
-            id="mes"
-            labels={meses}
-            datasets={[{ data: ventasPorMes, backgroundColor: "#378add", borderRadius: 5 }]}
-          />
+          <BarChart labels={meses} values={ventasPorMes} color="var(--blue)" height={180} />
         </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         {/* Estado de reservas */}
         <div className="card">
-          <div className="card-header"><div className="card-title">Estado de reservas</div></div>
-          <ChartDona id="est" labels={estados} data={countEstados} colors={["#1d9e75", "#ef9f27", "#e24b4a"]} />
-          <div className="chart-legend" style={{ marginTop: 12, justifyContent: "center" }}>
-            {estados.map((e, i) => (
-              <span key={e} className="legend-item">
-                <span className="legend-sq" style={{ background: ["#1d9e75","#ef9f27","#e24b4a"][i] }} />
-                {e}: {countEstados[i]}
-              </span>
-            ))}
+          <div className="card-header">
+            <div className="card-title">Estado de reservas</div>
           </div>
+          <HBarChart items={countEstados} />
         </div>
 
         {/* Métodos de pago */}
         <div className="card">
-          <div className="card-header"><div className="card-title">Métodos de pago</div></div>
-          <ChartDona id="met" labels={metodos} data={countMetodos} colors={["#1d9e75", "#378add", "#ef9f27"]} />
-          <div className="chart-legend" style={{ marginTop: 12, justifyContent: "center" }}>
-            {metodos.map((m, i) => (
-              <span key={m} className="legend-item">
-                <span className="legend-sq" style={{ background: ["#1d9e75","#378add","#ef9f27"][i] }} />
-                {m}: {countMetodos[i]}
-              </span>
-            ))}
+          <div className="card-header">
+            <div className="card-title">Métodos de pago</div>
           </div>
+          <HBarChart items={countMetodos} />
         </div>
       </div>
     </div>

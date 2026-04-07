@@ -85,7 +85,7 @@ const navItems = [
   {
     label: "Inteligencia",
     items: [
-      { id: "ia",       text: "IA & Redes"   },
+      { id: "ia",       text: "Promociones"   },
       { id: "reportes", text: "Reportes"     },
     ],
   },

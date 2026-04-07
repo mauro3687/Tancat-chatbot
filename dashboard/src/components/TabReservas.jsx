@@ -7,17 +7,15 @@ import { CANCHAS, DEPORTES, DEPORTE_EMOJI, PRECIOS, LOCALES } from "../data/canc
 const STATUS_CLASS = { Confirmada: "s-confirmed", Pendiente: "s-pending", Cancelada: "s-cancelled" };
 const ESTADOS = ["Confirmada", "Pendiente", "Cancelada"];
 
-// Horas de inicio disponibles (08:00 a 21:00)
 const HORAS_INICIO = Array.from({ length: 14 }, (_, i) => {
   const h = 8 + i;
   return `${String(h).padStart(2, "0")}:00`;
 });
 
 const EMPTY = {
-  clienteId: "", cliente: "", deporte: "", canchaId: "", cancha: "",
-  localId: "", servicio: "", horaInicio: "", horas: 1, horario: "",
+  clienteId: "", deporte: "", canchaId: "", cancha: "",
+  localId: "", servicio: "", horaInicio: "", horas: 1,
   fecha: "", personas: 1, monto: 0, sena: 0, estado: "Pendiente", notas: "",
-  email: "", telefono: "",
 };
 
 function formatFecha(f) {
@@ -29,17 +27,11 @@ function formatMonto(m) {
   return "$" + Number(m).toLocaleString("es-AR");
 }
 
-// Parsea "08:00 — 10:00" → { inicio: 8, fin: 10 }
 function parseHorarioRange(h) {
   if (!h) return null;
   const parts = h.split("—").map((s) => parseInt(s.trim()));
   if (parts.length < 2 || isNaN(parts[0]) || isNaN(parts[1])) return null;
   return { inicio: parts[0], fin: parts[1] };
-}
-
-function horariosOverlap(a, b) {
-  if (!a || !b) return false;
-  return a.inicio < b.fin && a.fin > b.inicio;
 }
 
 function buildHorario(horaInicio, horas) {
@@ -56,14 +48,23 @@ export default function TabReservas() {
   const [form, setForm] = useState(EMPTY);
   const [errors, setErrors] = useState({});
 
-  // Precios dinámicos: usa config.precios si existen, sino los defaults de canchas.js
   const getPrecio = (dep) => config?.precios?.[dep] ?? PRECIOS[dep] ?? 0;
   const senaPct = (config?.sena ?? 30) / 100;
 
+  // Resuelve el nombre del cliente desde la colección clientes
+  const clienteNombre = (r) => {
+    if (r.clienteId) {
+      const c = clientes.find((cl) => cl.id === r.clienteId);
+      if (c) return c.nombre;
+    }
+    return r.cliente || "—"; // fallback para reservas antiguas
+  };
+
   const filtered = reservas.filter((r) => {
     const q = search.toLowerCase();
+    const nombre = clienteNombre(r).toLowerCase();
     return (
-      (r.cliente.toLowerCase().includes(q) ||
+      (nombre.includes(q) ||
         r.id?.toLowerCase().includes(q) ||
         (r.servicio || "").toLowerCase().includes(q)) &&
       (filterEstado === "" || r.estado === filterEstado)
@@ -76,24 +77,18 @@ export default function TabReservas() {
       return { canchasLibres: CANCHAS.filter((c) => c.deporte === form.deporte), todasOcupadas: false };
     }
     const hInicio = parseInt(form.horaInicio);
-    const hFin = hInicio + (form.horas || 1);
-    const nuevaRange = { inicio: hInicio, fin: hFin };
+    const nuevaRange = { inicio: hInicio, fin: hInicio + (form.horas || 1) };
     const currentId = modal?.data?.id;
-
     const canchasDeporte = CANCHAS.filter((c) => c.deporte === form.deporte);
     const libres = canchasDeporte.filter((cancha) => {
       const ocupada = reservas.some((r) => {
-        if (r.canchaId !== cancha.id) return false;
-        if (r.fecha !== form.fecha) return false;
-        if (r.estado === "Cancelada") return false;
-        if (r.id === currentId) return false;
-        const existing = parseHorarioRange(r.horario);
-        if (!existing) return false;
-        return existing.inicio < nuevaRange.fin && existing.fin > nuevaRange.inicio;
+        if (r.canchaId !== cancha.id || r.fecha !== form.fecha) return false;
+        if (r.estado === "Cancelada" || r.id === currentId) return false;
+        const ex = parseHorarioRange(r.horario);
+        return ex && ex.inicio < nuevaRange.fin && ex.fin > nuevaRange.inicio;
       });
       return !ocupada;
     });
-
     return { canchasLibres: libres, todasOcupadas: canchasDeporte.length > 0 && libres.length === 0 };
   }, [form.deporte, form.fecha, form.horaInicio, form.horas, reservas, modal?.data?.id]);
 
@@ -120,25 +115,22 @@ export default function TabReservas() {
   const setField = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
   const handleClienteChange = (e) => {
-    const c = clientes.find((cl) => cl.id === e.target.value);
-    setForm((f) => ({ ...f, clienteId: e.target.value, cliente: c ? c.nombre : "" }));
+    setForm((f) => ({ ...f, clienteId: e.target.value }));
   };
 
   const handleDeporteChange = (e) => {
     const dep = e.target.value;
     const precio = getPrecio(dep);
     const monto = precio * (form.horas || 1);
-    const sena = Math.round(monto * senaPct);
     setForm((f) => ({
       ...f, deporte: dep, canchaId: "", cancha: "",
-      localId: "", servicio: "", monto, sena,
+      localId: "", servicio: "", monto, sena: Math.round(monto * senaPct),
     }));
   };
 
   const handleCanchaChange = (e) => {
     const cancha = CANCHAS.find((c) => c.id === e.target.value);
     if (!cancha) return;
-    const local = LOCALES[cancha.localId];
     setForm((f) => ({
       ...f,
       canchaId: cancha.id,
@@ -152,20 +144,18 @@ export default function TabReservas() {
   const handleHorasChange = (newHoras) => {
     const precio = getPrecio(form.deporte);
     const monto = precio * newHoras;
-    const sena = Math.round(monto * senaPct);
-    setForm((f) => ({ ...f, horas: newHoras, monto, sena }));
+    setForm((f) => ({ ...f, horas: newHoras, monto, sena: Math.round(monto * senaPct) }));
   };
 
-  // Horas disponibles según hora de inicio (no superar las 22:00)
   const maxHoras = form.horaInicio ? Math.min(6, 22 - parseInt(form.horaInicio)) : 6;
 
   const validate = () => {
     const e = {};
-    if (!form.clienteId)   e.clienteId  = "Seleccioná un cliente";
-    if (!form.deporte)     e.deporte    = "Seleccioná un deporte";
-    if (!form.canchaId)    e.canchaId   = "Seleccioná una cancha";
-    if (!form.fecha)       e.fecha      = "Ingresá una fecha";
-    if (!form.horaInicio)  e.horaInicio = "Seleccioná una hora de inicio";
+    if (!form.clienteId)  e.clienteId  = "Seleccioná un cliente";
+    if (!form.deporte)    e.deporte    = "Seleccioná un deporte";
+    if (!form.canchaId)   e.canchaId   = "Seleccioná una cancha";
+    if (!form.fecha)      e.fecha      = "Ingresá una fecha";
+    if (!form.horaInicio) e.horaInicio = "Seleccioná una hora de inicio";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -173,7 +163,9 @@ export default function TabReservas() {
   const handleSave = () => {
     if (!validate()) return;
     const horario = buildHorario(form.horaInicio, form.horas);
-    const savedForm = { ...form, horario };
+    // Solo guardamos campos limpios — sin cliente/email/telefono sueltos
+    const { horaInicio, ...rest } = form;
+    const savedForm = { ...rest, horario };
     if (modal.mode === "add") addReserva(savedForm);
     else updateReserva(modal.data.id, savedForm);
     closeModal();
@@ -186,10 +178,12 @@ export default function TabReservas() {
     canceladas:  filtered.filter((r) => r.estado === "Cancelada").length,
   };
 
-  // Canchas para el select (usa canchasLibres si hay fecha+hora, si no usa todas las del deporte)
   const canchasParaSelect = form.deporte
     ? (form.fecha && form.horaInicio ? canchasLibres : CANCHAS.filter((c) => c.deporte === form.deporte))
     : [];
+
+  // Cliente seleccionado en el formulario
+  const clienteSeleccionado = clientes.find((c) => c.id === form.clienteId);
 
   return (
     <div>
@@ -203,7 +197,6 @@ export default function TabReservas() {
         <button className="btn btn-primary" onClick={openAdd}>+ Nueva reserva</button>
       </div>
 
-      {/* Tarjetas resumen */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 10, marginBottom: "1.25rem" }}>
         {[
           { label: "Total",       val: totales.total,       color: "var(--gray-800)" },
@@ -251,7 +244,7 @@ export default function TabReservas() {
               ) : filtered.map((r) => (
                 <tr key={r.id}>
                   <td><span className="mono">{r.id}</span></td>
-                  <td style={{ fontWeight: 500 }}>{r.cliente}</td>
+                  <td style={{ fontWeight: 500 }}>{clienteNombre(r)}</td>
                   <td>{DEPORTE_EMOJI[r.deporte] || ""} {r.deporte || r.servicio}</td>
                   <td style={{ color: "var(--gray-600)", fontSize: 13 }}>{r.cancha || "—"}</td>
                   <td>{formatFecha(r.fecha)}</td>
@@ -273,37 +266,64 @@ export default function TabReservas() {
       </div>
 
       {/* ── Modal Ver detalle ─────────────────────────────────────────────── */}
-      {modal?.mode === "view" && (
-        <Modal title={`Detalle — ${modal.data.id}`} onClose={closeModal}>
-          <div className="detail-grid">
-            {[
-              ["ID",        modal.data.id],
-              ["Cliente",   modal.data.cliente],
-              ["Deporte",   `${DEPORTE_EMOJI[modal.data.deporte] || ""} ${modal.data.deporte || "—"}`],
-              ["Cancha",    modal.data.cancha || "—"],
-              ["Local",     LOCALES[modal.data.localId]?.nombre || "—"],
-              ["Fecha",     formatFecha(modal.data.fecha)],
-              ["Horario",   modal.data.horario || "—"],
-              ["Personas",  modal.data.personas],
-              ["Monto",     formatMonto(modal.data.monto)],
-              ["Seña",      formatMonto(modal.data.sena || 0)],
-              ["Estado",    modal.data.estado],
-              ["Notas",     modal.data.notas || "—"],
-            ].map(([k, v]) => (
-              <div key={k} className="detail-row">
-                <span className="detail-label">{k}</span>
-                <span className="detail-value">
-                  {k === "Estado" ? <span className={`status ${STATUS_CLASS[v]}`}>{v}</span> : v}
-                </span>
+      {modal?.mode === "view" && (() => {
+        const r = modal.data;
+        const c = clientes.find((cl) => cl.id === r.clienteId);
+        return (
+          <Modal title={`Detalle — ${r.id}`} onClose={closeModal}>
+            {c && (
+              <div style={{
+                background: "var(--accent-muted)",
+                border: "1px solid var(--accent-border)",
+                borderRadius: 8,
+                padding: "10px 14px",
+                marginBottom: 14,
+                display: "flex",
+                gap: 16,
+                fontSize: 13,
+              }}>
+                <div>
+                  <span style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.4px" }}>Cliente</span>
+                  <div style={{ fontWeight: 600, color: "var(--text-primary)", marginTop: 2 }}>
+                    {c.nombre}
+                    {c.origen === "whatsapp" && (
+                      <span style={{ marginLeft: 7, fontSize: 10, fontWeight: 600, background: "rgba(37,211,102,0.12)", color: "#25D366", border: "1px solid rgba(37,211,102,0.25)", padding: "1px 7px", borderRadius: 20 }}>WA</span>
+                    )}
+                  </div>
+                </div>
+                {c.telefono && <div><span style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, textTransform: "uppercase" }}>Teléfono</span><div style={{ marginTop: 2 }}>{c.telefono}</div></div>}
+                {c.email    && <div><span style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, textTransform: "uppercase" }}>Email</span><div style={{ marginTop: 2 }}>{c.email}</div></div>}
               </div>
-            ))}
-          </div>
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: "1.25rem" }}>
-            <button className="btn" onClick={() => { closeModal(); openEdit(modal.data); }}>Editar</button>
-            <button className="btn" onClick={closeModal}>Cerrar</button>
-          </div>
-        </Modal>
-      )}
+            )}
+            <div className="detail-grid">
+              {[
+                ["ID",       r.id],
+                ["Deporte",  `${DEPORTE_EMOJI[r.deporte] || ""} ${r.deporte || "—"}`],
+                ["Cancha",   r.cancha || "—"],
+                ["Local",    LOCALES[r.localId]?.nombre || "—"],
+                ["Fecha",    formatFecha(r.fecha)],
+                ["Horario",  r.horario || "—"],
+                ["Personas", r.personas],
+                ["Monto",    formatMonto(r.monto)],
+                ["Seña",     formatMonto(r.sena || 0)],
+                ["Estado",   r.estado],
+                ["Notas",    r.notas || "—"],
+              ].map(([k, v]) => (
+                <div key={k} className="detail-row">
+                  <span className="detail-label">{k}</span>
+                  <span className="detail-value">
+                    {k === "Estado" ? <span className={`status ${STATUS_CLASS[v]}`}>{v}</span> : v}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: "1.25rem" }}>
+              <button className="btn" onClick={() => { closeModal(); openEdit(r); }}>Editar</button>
+              <button className="btn" onClick={closeModal}>Cerrar</button>
+            </div>
+          </Modal>
+        );
+      })()}
 
       {/* ── Modal Alta / Edición ──────────────────────────────────────────── */}
       {(modal?.mode === "add" || modal?.mode === "edit") && (
@@ -315,7 +335,7 @@ export default function TabReservas() {
           <div className="form-grid">
 
             {/* Cliente */}
-            <div className="form-group">
+            <div className="form-group form-full">
               <label className="form-label">Cliente *</label>
               <select
                 className={`form-input ${errors.clienteId ? "input-error" : ""}`}
@@ -323,9 +343,32 @@ export default function TabReservas() {
                 onChange={handleClienteChange}
               >
                 <option value="">Seleccioná un cliente</option>
-                {clientes.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                {clientes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nombre}{c.telefono ? ` — ${c.telefono}` : ""}{c.origen === "whatsapp" ? " (WA)" : ""}
+                  </option>
+                ))}
               </select>
               {errors.clienteId && <span className="form-error">{errors.clienteId}</span>}
+              {/* Info del cliente seleccionado */}
+              {clienteSeleccionado && (
+                <div style={{
+                  marginTop: 8,
+                  padding: "8px 12px",
+                  background: "var(--accent-muted)",
+                  border: "1px solid var(--accent-border)",
+                  borderRadius: 6,
+                  fontSize: 12,
+                  color: "var(--text-secondary)",
+                  display: "flex",
+                  gap: 16,
+                  flexWrap: "wrap",
+                }}>
+                  {clienteSeleccionado.telefono && <span>📞 {clienteSeleccionado.telefono}</span>}
+                  {clienteSeleccionado.email    && <span>✉ {clienteSeleccionado.email}</span>}
+                  {clienteSeleccionado.ciudad   && <span>📍 {clienteSeleccionado.ciudad}</span>}
+                </div>
+              )}
             </div>
 
             {/* Deporte */}
@@ -364,7 +407,11 @@ export default function TabReservas() {
               <select
                 className={`form-input ${errors.horaInicio ? "input-error" : ""}`}
                 value={form.horaInicio}
-                onChange={(e) => { setField("horaInicio", e.target.value); setField("canchaId", ""); setField("cancha", ""); }}
+                onChange={(e) => {
+                  setField("horaInicio", e.target.value);
+                  setField("canchaId", "");
+                  setField("cancha", "");
+                }}
               >
                 <option value="">Seleccioná hora</option>
                 {HORAS_INICIO.map((h) => <option key={h} value={h}>{h}</option>)}
@@ -396,20 +443,11 @@ export default function TabReservas() {
             <div className="form-group">
               <label className="form-label">Cancha *</label>
               {todasOcupadas ? (
-                <div
-                  style={{
-                    background: "var(--red-light)",
-                    border: "1px solid var(--red)",
-                    borderRadius: 6,
-                    padding: "8px 12px",
-                    fontSize: 13,
-                    color: "var(--red)",
-                    fontWeight: 500,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                  }}
-                >
+                <div style={{
+                  background: "var(--red-light)", border: "1px solid var(--red)",
+                  borderRadius: 6, padding: "8px 12px", fontSize: 13,
+                  color: "var(--red)", fontWeight: 500, display: "flex", alignItems: "center", gap: 6,
+                }}>
                   ⛔ No hay canchas disponibles para ese día y horario
                 </div>
               ) : (
@@ -420,10 +458,8 @@ export default function TabReservas() {
                   disabled={!form.deporte || !form.fecha || !form.horaInicio}
                 >
                   <option value="">
-                    {!form.deporte
-                      ? "Primero elegí un deporte"
-                      : !form.fecha || !form.horaInicio
-                      ? "Primero elegí fecha y horario"
+                    {!form.deporte ? "Primero elegí un deporte"
+                      : !form.fecha || !form.horaInicio ? "Primero elegí fecha y horario"
                       : "Seleccioná una cancha"}
                   </option>
                   {canchasParaSelect.map((c) => (
@@ -433,9 +469,7 @@ export default function TabReservas() {
                   ))}
                 </select>
               )}
-              {errors.canchaId && !todasOcupadas && (
-                <span className="form-error">{errors.canchaId}</span>
-              )}
+              {errors.canchaId && !todasOcupadas && <span className="form-error">{errors.canchaId}</span>}
             </div>
 
             {/* Monto */}
@@ -457,7 +491,7 @@ export default function TabReservas() {
               )}
             </div>
 
-            {/* Seña (calculada automáticamente) */}
+            {/* Seña */}
             <div className="form-group">
               <label className="form-label">Seña {config?.sena ?? 30}% ($)</label>
               <input
@@ -472,11 +506,7 @@ export default function TabReservas() {
             {/* Estado */}
             <div className="form-group">
               <label className="form-label">Estado</label>
-              <select
-                className="form-input"
-                value={form.estado}
-                onChange={(e) => setField("estado", e.target.value)}
-              >
+              <select className="form-input" value={form.estado} onChange={(e) => setField("estado", e.target.value)}>
                 {ESTADOS.map((e) => <option key={e}>{e}</option>)}
               </select>
             </div>
@@ -508,7 +538,7 @@ export default function TabReservas() {
         <Modal title="Eliminar reserva" onClose={closeModal} size="sm">
           <p style={{ color: "var(--gray-600)", marginBottom: "1rem" }}>
             ¿Eliminás la reserva <strong>{modal.data.id}</strong> de{" "}
-            <strong>{modal.data.cliente}</strong>? Esta acción no se puede deshacer.
+            <strong>{clienteNombre(modal.data)}</strong>? Esta acción no se puede deshacer.
           </p>
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
             <button className="btn" onClick={closeModal}>Cancelar</button>
