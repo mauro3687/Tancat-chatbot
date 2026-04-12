@@ -173,7 +173,6 @@ async function continuarReserva(phone, session, msg, usuario) {
     const expiracion = new Date(ahora.getTime() + 60 * 60 * 1000);
     const horaLimite = expiracion.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 
-    // 🛡️ LIMPIEZA Y FORMATEO HH:mm PARA EL DASHBOARD:
     let valorLimpio = msg.split(/[—-]/)[0].trim(); 
     if (valorLimpio.length === 4) valorLimpio = "0" + valorLimpio;
 
@@ -186,11 +185,8 @@ async function continuarReserva(phone, session, msg, usuario) {
       telefono: phone,
       deporte: data.deporte,
       fecha: data.fecha,
-      
-      // ✅ DOBLE CAMPO PARA COMPATIBILIDAD CON SELECTOR DEL DASHBOARD
       horario: valorLimpio, 
       horaInicio: valorLimpio, 
-      
       canchaId: canchaLibre.id,
       canchaNombre: canchaLibre.nombre,
       local: localInfo.nombre,
@@ -201,8 +197,17 @@ async function continuarReserva(phone, session, msg, usuario) {
       expiresAt: expiracion.toISOString()
     });
 
+    // --- 🔑 CAMBIO AQUÍ: ENVIAMOS MENSAJE + BOTÓN DE CIERRE ---
+    
+    const textoFinal = `✅ *SOLICITUD DE RESERVA RECIBIDA*\n\n📍 *${localInfo.nombre}*\n🏟️ Cancha: ${canchaLibre.nombre}\n📅 Fecha: ${formatFecha(data.fecha)}\n⏰ Horario: ${msg}\n\n--- 💳 *DATOS DE PAGO (SEÑA)* ---\n\n💰 *Monto a transferir: $${sena}*\n🏦 *Mercado Pago:* ezeg08.mp\n⏳ *TIEMPO LÍMITE:* Tenés hasta las *${horaLimite} hs* para enviar el comprobante.`;
+
+    await enviarMensaje(phone, textoFinal);
+    
+    // Reseteamos el flujo ANTES de enviar los botones para que el bot esté listo para escuchar el nuevo mensaje
     resetFlow(phone);
 
-    return `✅ *SOLICITUD DE RESERVA RECIBIDA*\n\n📍 *${localInfo.nombre}*\n🏟️ Cancha: ${canchaLibre.nombre}\n📅 Fecha: ${formatFecha(data.fecha)}\n⏰ Horario: ${msg}\n\n--- 💳 *DATOS DE PAGO (SEÑA)* ---\n\n💰 *Monto a transferir: $${sena}*\n🏦 *Mercado Pago:* ezeg08.mp\n⏳ *TIEMPO LÍMITE:* Tienes hasta las *${horaLimite} hs* para enviar el comprobante.`;
-  }
-}
+    // Enviamos el botón de confirmación de pago
+    await enviarBotones(phone, "Confirmá cuando termines el pago para que el administrador verifique tu turno 👇", ["Ya realicé la transferencia"]);
+
+    return null; // Devolvemos null porque ya enviamos todo por funciones externas
+  }}
