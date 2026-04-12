@@ -13,23 +13,46 @@ export async function procesarMensaje(phone, texto) {
     return "Proceso cancelado ✅ Escribí *hola* para ver el menú.";
   }
 
-  // --- 1. REGISTRO ---
+  // --- 1. FLUJO DE REGISTRO (Nombre -> Email -> Ciudad) ---
   if (!usuario && !session.flow) {
-    if (session.step !== 'REG_NOMBRE' && session.step !== 'REG_DNI') {
+    if (!['REG_NOMBRE', 'REG_GMAIL', 'REG_UBICACION'].includes(session.step)) {
       session.step = 'REG_NOMBRE';
       return "¡Bienvenido a *TanCat*! 🎾 ¿Cómo es tu nombre completo?";
     }
   }
-  if (session.step === 'REG_NOMBRE') { session.nombreTemp = msg; session.step = 'REG_DNI'; return "¡Un gusto! Ahora ingresá tu *DNI*:"; }
-  if (session.step === 'REG_DNI') {
-    usuario = { nombre: session.nombreTemp, dni: msg };
+
+  if (session.step === 'REG_NOMBRE') { 
+      session.nombreTemp = msg; 
+      session.step = 'REG_GMAIL'; 
+      return "¡Un gusto! Ahora ingresá tu *correo electrónico (Email)*:"; 
+  }
+
+  if (session.step === 'REG_GMAIL') {
+      if (!msg.includes("@")) return "⚠️ Por favor, ingresá un correo válido.";
+      session.gmailTemp = msg;
+      session.step = 'REG_UBICACION';
+      await enviarBotones(phone, "¿Desde dónde nos escribís?", ["Córdoba", "Otras Provincias"]);
+      return null;
+  }
+
+  if (session.step === 'REG_UBICACION') {
+    usuario = { 
+      nombre: session.nombreTemp || "Jugador", 
+      email: session.gmailTemp || "sin@mail.com", 
+      ciudad: msg || "Córdoba"
+    };
+    
     await guardarUsuario(phone, usuario);
     resetFlow(phone);
-    await enviarBotones(phone, `¡Listo ${usuario.nombre}! ✅ ¿Qué querés hacer?`, ["Reservar Cancha", "Ver mis Reservas", "Ver Precios"]);
+    
+    usuario = await buscarUsuario(phone);
+    
+    const nombreSeguro = usuario?.nombre || "Jugador";
+    await enviarBotones(phone, `¡Listo ${nombreSeguro}! ✅ Registro completado. ¿Qué hacemos hoy?`, ["Reservar Cancha", "Ver mis Reservas", "Ver Precios"]);
     return null;
   }
 
-  
+  // --- 2. MENÚ PRINCIPAL ---
   if (!session.flow) {
     if (msg.includes("Precios")) {
       return `💰 *Tarifas TanCat:*\n\n${EMOJI.padel} Padel: $${PRECIOS.padel}\n${EMOJI.basquet} Básquet: $${PRECIOS.basquet}\n${EMOJI.voley} Voley: $${PRECIOS.voley}\n\n_Se requiere seña del 30% para confirmar._`;
@@ -37,31 +60,30 @@ export async function procesarMensaje(phone, texto) {
 
     if (msg.includes("mis Reservas")) {
       const todas = await getReservas();
-      const misTurnos = todas.filter(r => r.dni === usuario.dni && r.estado !== "Cancelada");
+      const misTurnos = todas.filter(r => r.clienteId === usuario.id && r.estado !== "Cancelada");
       if (misTurnos.length === 0) return `Hola ${usuario.nombre}, no tenés reservas activas. 🏟️`;
-      const lista = misTurnos.map(r => `• *${r.deporte.toUpperCase()}* (${r.estado})\n  📅 ${formatFecha(r.fecha)} - ⏰ ${r.horario}`).join("\n\n");
+      const lista = misTurnos.map(r => `• *${r.deporte.toUpperCase()}* (${r.estado})\n  📅 ${formatFecha(r.fecha)} - ⏰ ${r.horaInicio || r.horario}`).join("\n\n");
       return `📋 *Tus reservas:*\n\n${lista}`;
     }
 
-   if (msg.includes("Reservar") || /reserv|turno/.test(msg.toLowerCase())) {
+    if (msg.includes("Reservar") || /reserv|turno/.test(msg.toLowerCase())) {
       const todas = await getReservas();
       
-     
       const pendientesActivas = todas.filter(r => {
-        if (r.dni === usuario.dni && r.estado === "Pendiente") {
-          const ahora = new Date();
-          const creacion = new Date(r.createdAt);
+        if (r.clienteId === usuario.id && r.estado === "Pendiente") {
+          const ahora = new Date().getTime();
+          const creacion = r.createdAt?.toMillis ? r.createdAt.toMillis() : Date.parse(r.createdAt);
+          if (!creacion) return false; 
           const diferenciaHoras = (ahora - creacion) / (1000 * 60 * 60);
-          return diferenciaHoras < 1; // Si tiene menos de 1 hora, lo bloquea
+          return diferenciaHoras < 1; 
         }
         return false;
       });
       
       if (pendientesActivas.length > 0) {
-        return `⚠️ *Atención ${usuario.nombre}:*\n\nTenés una reserva pendiente de seña. Recordá que tenés *1 hora* desde que la solicitaste para abonar y enviar el comprobante.\n\nSi ya pasó la hora, intentá de nuevo. Si no, enviá el pago a:\nAlias: *ezeg08.mp*`;
+        return `⚠️ *Atención ${usuario.nombre}:*\n\nTenés una reserva pendiente de seña. Recordá que tenés *1 hora* para enviar el comprobante.\n\nAlias: *ezeg08.mp*`;
       }
 
-      
       session.flow = "reserva";
       session.step = 0;
       await enviarBotones(phone, "🎾 ¿Qué deporte jugamos?", ["Padel", "Básquet", "Voley"]);
@@ -76,41 +98,42 @@ export async function procesarMensaje(phone, texto) {
   }
 
   if (session.flow === "reserva") return await continuarReserva(phone, session, msg, usuario);
-  return "Escribí *hola* para ver las opciones.";
+  
+  if (!session.flow && session.step === undefined) {
+      return "Escribí *hola* para ver las opciones.";
+  }
+  return null;
 }
 
 async function continuarReserva(phone, session, msg, usuario) {
   const { step, data } = session;
 
   if (step === 0) { 
-    session.step = 1; session.data = { deporte: msg.toLowerCase().replace("á", "a") };
-    return "📅 ¿Para qué fecha? (DD/MM/AAAA)";
+    session.step = 1; 
+    session.data = { deporte: msg.toLowerCase().replace("á", "a") };
+    return "📅 *¿Para qué fecha?*\n(Ej: 'Hoy', 'Mañana' o '15/04')";
   }
 
- if (step === 1) { 
+  if (step === 1) {
     const r = parsearFecha(msg);
-    
-    
-    if (r.error) {
-      
-      return r.error; 
-    }
-    
-    session.data = { ...data, fecha: r.fecha }; 
+    if (r.error) return r.error;
+    const fechaValida = r.fecha instanceof Date ? r.fecha : new Date();
+    const fechaISO = fechaValida.toISOString().split('T')[0]; 
+    session.data = { ...data, fecha: fechaISO }; 
     session.step = 1.5;
-    
-    await enviarBotones(phone, `Genial, para el día ${formatFecha(r.fecha)}. ¿En qué horario preferís?`, [
-      "Turno 08 a 18hs", 
-      "Turno 18 a 22hs",
-      "⬅️ Cambiar Fecha"
-    ]);
+    await enviarBotones(phone, `Genial, para el día ${formatFecha(fechaISO)}. ¿En qué horario preferís?`, 
+      ["Turno 08 a 18hs", "Turno 18 a 22hs", "⬅️ Cambiar Fecha"]);
     return null;
   }
 
   if (step === 1.5) {
     if (msg.includes("Fecha")) { session.step = 1; return "📅 ¿Para qué fecha? (DD/MM/AAAA)"; }
-    const disponibles = getHorariosDisponibles(await getReservas(), data.deporte, data.fecha);
-    let filtrados = msg.includes("08 a 18") ? disponibles.filter(h => parseInt(h.split(":")[0]) < 18) : disponibles.filter(h => parseInt(h.split(":")[0]) >= 18);
+    const todasLasReservas = await getReservas();
+    const disponibles = getHorariosDisponibles(todasLasReservas, data.deporte, data.fecha);
+    
+    let filtrados = msg.includes("08 a 18") 
+      ? disponibles.filter(h => parseInt(h.split(":")[0]) < 18) 
+      : disponibles.filter(h => parseInt(h.split(":")[0]) >= 18);
     
     if (filtrados.length === 0) { 
       await enviarBotones(phone, "Sin turnos libres en este bloque.", ["Turno 08 a 18hs", "Turno 18 a 22hs", "⬅️ Cambiar Fecha"]); 
@@ -120,48 +143,54 @@ async function continuarReserva(phone, session, msg, usuario) {
     session.step = 2; 
     session.data = { ...data, disponibles: filtrados };
     await enviarLista(phone, "Elegí tu turno 👇", "Ver Horarios", filtrados);
-    
-    await enviarBotones(phone, "¿Querés cambiar de bloque?", ["Turno 08 a 18hs", "Turno 18 a 22hs"]);
     return null;
   }
 
   if (step === 2) {
-    
     if (msg.includes("Turno 08 a 18hs") || msg.includes("Turno 18 a 22hs")) {
-      session.step = 1.5; // Volvemos al paso de procesamiento de bloques
+      session.step = 1.5;
       return await continuarReserva(phone, session, msg, usuario);
     }
 
-    if (msg.includes("Cambiar Fecha")) { session.step = 1; return "📅 ¿Para qué fecha? (DD/MM/AAAA)"; }
+    if (msg.includes("Cambiar Fecha")) { 
+      session.step = 1; 
+      return "📅 *¿Para qué fecha?* (Ej: 'Hoy', 'Mañana')"; 
+    }
 
     const reservasCheck = await getReservas();
     const canchaLibre = asignarCancha(reservasCheck, data.deporte, data.fecha, msg);
 
     if (!canchaLibre) {
-      
-      if (!msg.includes(" — ")) {
-        return "⚠️ Por favor, seleccioná un horario de la lista *Ver Horarios* de arriba.";
-      }
       session.step = 1.5;
-      await enviarBotones(phone, "❌ Se ocupó el lugar. Elegí otro horario:", ["Turno 08 a 18hs", "Turno 18 a 22hs"]);
+      await enviarBotones(phone, "❌ Horario ocupado. Elegí otro:", ["Turno 08 a 18hs", "Turno 18 a 22hs"]);
       return null;
     }
 
-    const total = PRECIOS[data.deporte];
+    const total = PRECIOS[data.deporte] || 0;
     const sena = total * 0.30;
     const localInfo = LOCALES[canchaLibre.localId];
-    
     const ahora = new Date();
     const expiracion = new Date(ahora.getTime() + 60 * 60 * 1000);
     const horaLimite = expiracion.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 
+    // 🛡️ LIMPIEZA Y FORMATEO HH:mm PARA EL DASHBOARD:
+    let valorLimpio = msg.split(/[—-]/)[0].trim(); 
+    if (valorLimpio.length === 4) valorLimpio = "0" + valorLimpio;
+
+    // 🚀 GUARDADO EN FIREBASE
     await crearReserva({
-      cliente: usuario.nombre,
-      dni: usuario.dni,
+      clienteId: usuario.id || "", 
+      cliente: usuario.nombre || "Jugador",
+      email: usuario.email || "", 
+      ciudad: usuario.ciudad || "",
       telefono: phone,
       deporte: data.deporte,
       fecha: data.fecha,
-      horario: msg,
+      
+      // ✅ DOBLE CAMPO PARA COMPATIBILIDAD CON SELECTOR DEL DASHBOARD
+      horario: valorLimpio, 
+      horaInicio: valorLimpio, 
+      
       canchaId: canchaLibre.id,
       canchaNombre: canchaLibre.nombre,
       local: localInfo.nombre,
@@ -174,6 +203,6 @@ async function continuarReserva(phone, session, msg, usuario) {
 
     resetFlow(phone);
 
-    return `✅ *SOLICITUD DE RESERVA RECIBIDA*\n\n📍 *${localInfo.nombre}*\n🏟️ Cancha: ${canchaLibre.nombre}\n📅 Fecha: ${formatFecha(data.fecha)}\n⏰ Horario: ${msg}\n\n--- 💳 *DATOS DE PAGO (SEÑA)* ---\n\n💰 *Monto a transferir: $${sena}*\n_(Corresponde al 30% del total $${total})_\n\n🏦 *Mercado Pago:*\n• Alias: *ezeg08.mp*\n• Titular: *Mauro Ezequiel Gorosito*\n\n⏳ *TIEMPO LÍMITE:* Tienes hasta las *${horaLimite} hs* para enviar el comprobante. Pasada la hora, la solicitud se cancelará automáticamente.`;
+    return `✅ *SOLICITUD DE RESERVA RECIBIDA*\n\n📍 *${localInfo.nombre}*\n🏟️ Cancha: ${canchaLibre.nombre}\n📅 Fecha: ${formatFecha(data.fecha)}\n⏰ Horario: ${msg}\n\n--- 💳 *DATOS DE PAGO (SEÑA)* ---\n\n💰 *Monto a transferir: $${sena}*\n🏦 *Mercado Pago:* ezeg08.mp\n⏳ *TIEMPO LÍMITE:* Tienes hasta las *${horaLimite} hs* para enviar el comprobante.`;
   }
 }

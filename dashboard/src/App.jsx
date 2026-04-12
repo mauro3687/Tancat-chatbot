@@ -3,6 +3,7 @@ import { StoreProvider, useStore } from "./data/store.jsx";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 import LoadingScreen from "./components/LoadingScreen";
+import LoginScreen from "./components/LoginScreen";
 import TabResumen from "./components/TabResumen";
 import TabReservas from "./components/TabReservas";
 import TabClientes from "./components/TabClientes";
@@ -14,11 +15,22 @@ import TabIA from "./components/TabIA";
 import TabWhatsApp from "./components/TabWhatsApp";
 import "./App.css";
 
+// Tabs permitidos por rol
+const TAB_PERMISOS = {
+  admin:     ["resumen", "reservas", "clientes", "ventas", "inventario", "ia", "reportes", "whatsapp", "configuracion"],
+  encargado: ["reservas", "clientes", "ventas", "inventario", "configuracion"],
+};
+
 function AppInner() {
   const [activeTab, setActiveTab] = useState("resumen");
-  const { loading } = useStore();
+  const { loading, currentUser } = useStore();
 
   if (loading) return <LoadingScreen />;
+  if (!currentUser) return <LoginScreen />;
+
+  const permitidos = TAB_PERMISOS[currentUser.rol] ?? TAB_PERMISOS.admin;
+  // Si el tab activo no está permitido para este rol, ir al primero disponible
+  const safeTab = permitidos.includes(activeTab) ? activeTab : permitidos[0];
 
   const tabs = {
     resumen:       <TabResumen />,
@@ -34,11 +46,11 @@ function AppInner() {
 
   return (
     <div className="app-layout">
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Sidebar activeTab={safeTab} setActiveTab={setActiveTab} tabsPermitidos={permitidos} />
       <div className="main-content">
-        <Topbar />
+        <Topbar activeTab={safeTab} />
         <div className="page-body">
-          {tabs[activeTab] ?? null}
+          {tabs[safeTab] ?? null}
         </div>
       </div>
     </div>
