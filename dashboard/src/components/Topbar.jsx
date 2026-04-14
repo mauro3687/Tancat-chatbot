@@ -1,4 +1,5 @@
 // src/components/Topbar.jsx
+import "../styles/Topbar.css";
 
 const TAB_LABELS = {
   resumen:       "Resumen general",
@@ -6,9 +7,9 @@ const TAB_LABELS = {
   clientes:      "Clientes",
   ventas:        "Ventas",
   inventario:    "Inventario",
-  ia:            "IA & Redes Sociales",
+  ia:            "Promociones",
   reportes:      "Reportes",
-
+  whatsapp:      "WhatsApp Bot",
   configuracion: "Configuración",
 };
 
@@ -25,7 +26,7 @@ export default function Topbar({ activeTab }) {
   return (
     <header className="topbar">
       <div>
-        <div className="topbar-title">Panel Administrativo</div>
+        <div className="topbar-title">{TAB_LABELS[activeTab] ?? "Panel Administrativo"}</div>
         <div className="topbar-date">{fechaCap} · {hora}</div>
       </div>
 

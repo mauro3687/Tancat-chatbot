@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import {
   collection, onSnapshot, addDoc, updateDoc, deleteDoc,
-  doc, serverTimestamp, query, orderBy
+  doc, serverTimestamp
 } from "firebase/firestore";
 import { db } from "../firebase.js";
 
@@ -24,20 +24,23 @@ export const USUARIOS = [
 const StoreContext = createContext(null);
 
 // ── Hook para suscribirse a una colección Firestore ───────────────────────────
-function useCollection(colName, ordenarPor = null) {
+function useCollection(colName) {
   const [data, setData]       = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
 
   useEffect(() => {
-    const ref = ordenarPor
-      ? query(collection(db, colName), orderBy(ordenarPor, "desc"))
-      : collection(db, colName);
-
     const unsub = onSnapshot(
-      ref,
+      collection(db, colName),
       (snap) => {
-        setData(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        // Ordenar por creadoEn en el cliente — evita dependencia de índices Firestore
+        docs.sort((a, b) => {
+          const ta = a.creadoEn?.seconds ?? 0;
+          const tb = b.creadoEn?.seconds ?? 0;
+          return tb - ta;
+        });
+        setData(docs);
         setLoading(false);
       },
       (err) => {
@@ -64,9 +67,9 @@ export function StoreProvider({ children }) {
 
   const logout = () => setCurrentUser(null);
 
-  const { data: reservas,  loading: loadingReservas  } = useCollection("reservas",  "creadoEn");
-  const { data: clientes,  loading: loadingClientes  } = useCollection("clientes",  "creadoEn");
-  const { data: ventas,    loading: loadingVentas    } = useCollection("ventas",    "creadoEn");
+  const { data: reservas,  loading: loadingReservas  } = useCollection("reservas");
+  const { data: clientes,  loading: loadingClientes  } = useCollection("clientes");
+  const { data: ventas,    loading: loadingVentas    } = useCollection("ventas");
   const { data: stock,     loading: loadingStock     } = useCollection("stock");
   const [config, setConfigLocal] = useState({
     nombre: "TanCat", razonSocial: "TanCat S.R.L.", cuit: "30-71234567-8",

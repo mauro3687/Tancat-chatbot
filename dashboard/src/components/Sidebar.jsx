@@ -1,4 +1,5 @@
 // src/components/Sidebar.jsx
+import "../styles/Sidebar.css";
 import { useStore } from "../data/store.jsx";
 
 const icons = {
@@ -133,7 +134,7 @@ export default function Sidebar({ activeTab, setActiveTab, tabsPermitidos }) {
                   className={`nav-item ${activeTab === item.id ? "active" : ""}`}
                   onClick={() => setActiveTab(item.id)}
                 >
-                  {icons[item.id] ?? <span style={{ width: 17, height: 17, flexShrink: 0 }} />}
+                  {icons[item.id] ?? <span className="icon-placeholder" />}
                   {item.text}
                 </button>
               ))}

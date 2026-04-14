@@ -1,0 +1,4 @@
+/* src/styles/TabClientes.css */
+/* (component-specific only — shared patterns live in shared.css) */
+
+.tc-name-cell { display: flex; align-items: center; gap: 7px; }

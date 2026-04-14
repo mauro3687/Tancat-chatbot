@@ -1,0 +1,112 @@
+/* src/styles/TabResumen.css */
+
+/* ── BarChart ───────────────────────────────────────────────────── */
+.bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 0 4px;
+  height: var(--chart-h, 160px);
+}
+
+.bar-chart-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+}
+
+.bar-chart-bar-wrap {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+}
+
+.bar-chart-bar {
+  width: 100%;
+  height: var(--bar-h, 0%);
+  background: var(--bar-c, var(--accent));
+  border-radius: 4px 4px 0 0;
+  min-height: 4px;
+  transition: height 0.4s ease;
+}
+
+.bar-chart-label {
+  font-size: 10px;
+  color: var(--gray-400);
+  white-space: nowrap;
+}
+
+.bar-chart-value {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* ── DonaChart ──────────────────────────────────────────────────── */
+.dona-chart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.dona-circle-wrap {
+  position: relative;
+  width: 160px;
+  height: 160px;
+}
+
+.dona-circle {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: var(--dona-grad, #444);
+}
+
+.dona-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.dona-total {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.dona-sub {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.dona-legend {
+  justify-content: center;
+}
+
+/* ── ChartBarras ────────────────────────────────────────────────── */
+.chart-barras-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.dona-wrap {
+  display: flex;
+  justify-content: center;
+  padding-top: 12px;
+}

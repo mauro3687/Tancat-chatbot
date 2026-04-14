@@ -1,0 +1,118 @@
+/* src/styles/TabReportes.css */
+
+/* ── BarChart ───────────────────────────────────────────────────── */
+.rep-bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  padding-top: 8px;
+  height: var(--chart-h, 180px);
+}
+
+.rep-bar-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+}
+
+.rep-bar-val {
+  font-size: 10px;
+  color: var(--text-muted);
+  min-height: 16px;
+  display: flex;
+  align-items: flex-end;
+}
+
+.rep-bar-wrap {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.rep-bar {
+  width: 100%;
+  height: var(--bar-h, 0%);
+  min-height: var(--bar-minh, 0px);
+  background: var(--bar-c, var(--accent));
+  border-radius: 3px 3px 0 0;
+  transition: height 0.4s ease;
+}
+
+.rep-bar-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* ── HBarChart ──────────────────────────────────────────────────── */
+.hbar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 8px;
+}
+
+.hbar-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.hbar-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hbar-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  display: inline-block;
+  background: var(--c, #888);
+}
+
+.hbar-pct {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.hbar-pct span {
+  font-size: 11px;
+}
+
+.hbar-bg {
+  height: 6px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.hbar-fill {
+  height: 100%;
+  width: var(--w, 0%);
+  background: var(--c, var(--accent));
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+/* ── Layout grids ───────────────────────────────────────────────── */
+.rep-charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.rep-export-btns {
+  display: flex;
+  gap: 8px;
+}

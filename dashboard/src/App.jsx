@@ -14,6 +14,7 @@ import TabConfiguracion from "./components/TabConfiguracion";
 import TabIA from "./components/TabIA";
 import TabWhatsApp from "./components/TabWhatsApp";
 import "./App.css";
+import "./styles/shared.css";
 
 // Tabs permitidos por rol
 const TAB_PERMISOS = {
@@ -25,8 +26,8 @@ function AppInner() {
   const [activeTab, setActiveTab] = useState("resumen");
   const { loading, currentUser } = useStore();
 
-  if (loading) return <LoadingScreen />;
   if (!currentUser) return <LoginScreen />;
+  if (loading) return <LoadingScreen />;
 
   const permitidos = TAB_PERMISOS[currentUser.rol] ?? TAB_PERMISOS.admin;
   // Si el tab activo no está permitido para este rol, ir al primero disponible

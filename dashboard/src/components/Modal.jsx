@@ -1,4 +1,5 @@
 // src/components/Modal.jsx — Modal reutilizable
+import "../styles/Modal.css";
 import { useEffect } from "react";
 
 export default function Modal({ title, onClose, children, size = "md" }) {
@@ -8,11 +9,11 @@ export default function Modal({ title, onClose, children, size = "md" }) {
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
 
-  const widths = { sm: 420, md: 560, lg: 720 };
+  const widths = { sm: "420px", md: "560px", lg: "720px" };
 
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal-box" style={{ maxWidth: widths[size] }}>
+      <div className="modal-box" style={{ '--modal-max': widths[size] }}>
         <div className="modal-header">
           <h3 className="modal-title">{title}</h3>
           <button className="modal-close" onClick={onClose}>

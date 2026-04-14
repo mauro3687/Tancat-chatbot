@@ -3,9 +3,10 @@ import { useState, useMemo } from "react";
 import { useStore } from "../data/store.jsx";
 import Modal from "./Modal";
 import { CANCHAS, DEPORTES, DEPORTE_EMOJI, PRECIOS, LOCALES } from "../data/canchas.js";
+import "../styles/TabReservas.css";
 
-const STATUS_CLASS = { Confirmada: "s-confirmed", Pendiente: "s-pending", Cancelada: "s-cancelled" };
-const ESTADOS = ["Confirmada", "Pendiente", "Cancelada"];
+const STATUS_CLASS = { Confirmada: "s-confirmed", Pendiente: "s-pending", Seña: "s-sena", Cancelada: "s-cancelled" };
+const ESTADOS = ["Confirmada", "Seña", "Pendiente", "Cancelada"];
 
 const HORAS_INICIO = Array.from({ length: 14 }, (_, i) => {
   const h = 8 + i;
@@ -40,6 +41,63 @@ function buildHorario(horaInicio, horas) {
   return `${String(h).padStart(2, "0")}:00 — ${String(h + horas).padStart(2, "0")}:00`;
 }
 
+function ModalDetalle({ reserva: r, clientes, onClose, onEdit }) {
+  const c = clientes.find((cl) => cl.id === r.clienteId) || null;
+  return (
+    <Modal title={`Detalle — ${r.id}`} onClose={onClose}>
+      {c && (
+        <div className="detail-client-box">
+          <div>
+            <div className="detail-client-label">Cliente</div>
+            <div className="detail-client-value">
+              {c.nombre}
+              {c.origen === "whatsapp" && <span className="badge-wa">WA</span>}
+            </div>
+          </div>
+          {c.telefono && (
+            <div>
+              <div className="detail-client-label">Teléfono</div>
+              <div>{c.telefono}</div>
+            </div>
+          )}
+          {c.email && (
+            <div>
+              <div className="detail-client-label">Email</div>
+              <div>{c.email}</div>
+            </div>
+          )}
+        </div>
+      )}
+      <div className="detail-grid">
+        {[
+          ["ID",       r.id],
+          ["Deporte",  `${DEPORTE_EMOJI[r.deporte] || ""} ${r.deporte || "—"}`],
+          ["Cancha",   r.cancha || "—"],
+          ["Local",    LOCALES[r.localId]?.nombre || "—"],
+          ["Fecha",    formatFecha(r.fecha)],
+          ["Horario",  r.horario || "—"],
+          ["Personas", r.personas ?? "—"],
+          ["Monto",    formatMonto(r.monto)],
+          ["Seña",     formatMonto(r.sena || 0)],
+          ["Estado",   r.estado],
+          ["Notas",    r.notas || "—"],
+        ].map(([k, v]) => (
+          <div key={k} className="detail-row">
+            <span className="detail-label">{k}</span>
+            <span className="detail-value">
+              {k === "Estado" ? <span className={`status ${STATUS_CLASS[v]}`}>{v}</span> : v}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="modal-actions">
+        <button className="btn" onClick={() => onEdit(r)}>Editar</button>
+        <button className="btn" onClick={onClose}>Cerrar</button>
+      </div>
+    </Modal>
+  );
+}
+
 export default function TabReservas() {
   const { reservas, clientes, addReserva, updateReserva, deleteReserva, config } = useStore();
   const [search, setSearch] = useState("");
@@ -51,27 +109,25 @@ export default function TabReservas() {
   const getPrecio = (dep) => config?.precios?.[dep] ?? PRECIOS[dep] ?? 0;
   const senaPct = (config?.sena ?? 30) / 100;
 
-  // Resuelve el nombre del cliente desde la colección clientes
   const clienteNombre = (r) => {
     if (r.clienteId) {
       const c = clientes.find((cl) => cl.id === r.clienteId);
-      if (c) return c.nombre;
+      if (c && c.nombre) return c.nombre;
     }
-    return r.cliente || "—"; // fallback para reservas antiguas
+    return r.cliente || "—";
   };
 
   const filtered = reservas.filter((r) => {
     const q = search.toLowerCase();
     const nombre = clienteNombre(r).toLowerCase();
+    const id = (r.id || "").toLowerCase();
+    const servicio = (r.servicio || "").toLowerCase();
     return (
-      (nombre.includes(q) ||
-        r.id?.toLowerCase().includes(q) ||
-        (r.servicio || "").toLowerCase().includes(q)) &&
+      (nombre.includes(q) || id.includes(q) || servicio.includes(q)) &&
       (filterEstado === "" || r.estado === filterEstado)
     );
   });
 
-  // ── Disponibilidad ─────────────────────────────────────────────────────────
   const { canchasLibres, todasOcupadas } = useMemo(() => {
     if (!form.deporte || !form.fecha || !form.horaInicio) {
       return { canchasLibres: CANCHAS.filter((c) => c.deporte === form.deporte), todasOcupadas: false };
@@ -92,10 +148,10 @@ export default function TabReservas() {
     return { canchasLibres: libres, todasOcupadas: canchasDeporte.length > 0 && libres.length === 0 };
   }, [form.deporte, form.fecha, form.horaInicio, form.horas, reservas, modal?.data?.id]);
 
-  // ── Handlers ───────────────────────────────────────────────────────────────
-  const openAdd = () => { setForm(EMPTY); setErrors({}); setModal({ mode: "add" }); };
-  const openEdit = (r) => {
-    const editForm = { ...EMPTY, ...r };
+  const openAdd    = () => { setForm(EMPTY); setErrors({}); setModal({ mode: "add" }); };
+  const openEdit   = (r) => {
+    const { cliente: _c, email: _e, telefono: _t, ...rLimpio } = r;
+    const editForm = { ...EMPTY, ...rLimpio };
     if (r.horario) {
       const parts = r.horario.split("—").map((s) => s.trim());
       if (parts.length === 2) {
@@ -109,14 +165,12 @@ export default function TabReservas() {
     setErrors({});
     setModal({ mode: "edit", data: r });
   };
-  const openView = (r) => setModal({ mode: "view", data: r });
+  const openView   = (r) => setModal({ mode: "view", data: r });
   const openDelete = (r) => setModal({ mode: "delete", data: r });
   const closeModal = () => setModal(null);
-  const setField = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  const setField   = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
-  const handleClienteChange = (e) => {
-    setForm((f) => ({ ...f, clienteId: e.target.value }));
-  };
+  const handleClienteChange = (e) => setForm((f) => ({ ...f, clienteId: e.target.value }));
 
   const handleDeporteChange = (e) => {
     const dep = e.target.value;
@@ -147,15 +201,33 @@ export default function TabReservas() {
     setForm((f) => ({ ...f, horas: newHoras, monto, sena: Math.round(monto * senaPct) }));
   };
 
+  const handleEstadoChange = (nuevoEstado) => {
+    const precioBase = getPrecio(form.deporte) * (form.horas || 1);
+    let monto = form.monto;
+    let sena  = form.sena;
+    if (nuevoEstado === "Pendiente" || nuevoEstado === "Cancelada") {
+      monto = 0;
+      sena  = 0;
+    } else if (nuevoEstado === "Seña") {
+      monto = Math.round(precioBase * senaPct);
+      sena  = monto;
+    } else if (nuevoEstado === "Confirmada") {
+      monto = precioBase;
+      sena  = precioBase;
+    }
+    setForm((f) => ({ ...f, estado: nuevoEstado, monto, sena }));
+  };
+
   const maxHoras = form.horaInicio ? Math.min(6, 22 - parseInt(form.horaInicio)) : 6;
 
   const validate = () => {
     const e = {};
-    if (!form.clienteId)  e.clienteId  = "Seleccioná un cliente";
-    if (!form.deporte)    e.deporte    = "Seleccioná un deporte";
-    if (!form.canchaId)   e.canchaId   = "Seleccioná una cancha";
-    if (!form.fecha)      e.fecha      = "Ingresá una fecha";
-    if (!form.horaInicio) e.horaInicio = "Seleccioná una hora de inicio";
+    const esEdicion = modal?.mode === "edit";
+    if (!form.clienteId)              e.clienteId  = "Seleccioná un cliente";
+    if (!form.deporte)                e.deporte    = "Seleccioná un deporte";
+    if (!esEdicion && !form.canchaId) e.canchaId   = "Seleccioná una cancha";
+    if (!form.fecha)                  e.fecha      = "Ingresá una fecha";
+    if (!form.horaInicio)             e.horaInicio = "Seleccioná una hora de inicio";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -163,8 +235,7 @@ export default function TabReservas() {
   const handleSave = () => {
     if (!validate()) return;
     const horario = buildHorario(form.horaInicio, form.horas);
-    // Solo guardamos campos limpios — sin cliente/email/telefono sueltos
-    const { horaInicio, ...rest } = form;
+    const { horaInicio, cliente: _c, email: _e, telefono: _t, ...rest } = form;
     const savedForm = { ...rest, horario };
     if (modal.mode === "add") addReserva(savedForm);
     else updateReserva(modal.data.id, savedForm);
@@ -182,12 +253,11 @@ export default function TabReservas() {
     ? (form.fecha && form.horaInicio ? canchasLibres : CANCHAS.filter((c) => c.deporte === form.deporte))
     : [];
 
-  // Cliente seleccionado en el formulario
   const clienteSeleccionado = clientes.find((c) => c.id === form.clienteId);
 
   return (
     <div>
-      <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+      <div className="page-header">
         <div>
           <div className="page-title">Reservas</div>
           <div className="page-desc">
@@ -197,16 +267,16 @@ export default function TabReservas() {
         <button className="btn btn-primary" onClick={openAdd}>+ Nueva reserva</button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 10, marginBottom: "1.25rem" }}>
+      <div className="kpi-grid kpi-grid-4">
         {[
           { label: "Total",       val: totales.total,       color: "var(--gray-800)" },
           { label: "Confirmadas", val: totales.confirmadas, color: "var(--green)" },
           { label: "Pendientes",  val: totales.pendientes,  color: "var(--amber)" },
           { label: "Canceladas",  val: totales.canceladas,  color: "var(--red)" },
         ].map((c) => (
-          <div key={c.label} className="metric-card" style={{ padding: "0.85rem 1rem" }}>
+          <div key={c.label} className="kpi-card">
             <div className="metric-label">{c.label}</div>
-            <div className="metric-value" style={{ fontSize: 22, color: c.color }}>{c.val}</div>
+            <div className="kpi-value" style={{ '--kpi-c': c.color }}>{c.val}</div>
           </div>
         ))}
       </div>
@@ -236,26 +306,22 @@ export default function TabReservas() {
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={9} style={{ textAlign: "center", padding: "2rem", color: "var(--gray-400)" }}>
-                    No se encontraron reservas
-                  </td>
-                </tr>
+                <tr><td colSpan={9} className="table-empty">No se encontraron reservas</td></tr>
               ) : filtered.map((r) => (
                 <tr key={r.id}>
                   <td><span className="mono">{r.id}</span></td>
-                  <td style={{ fontWeight: 500 }}>{clienteNombre(r)}</td>
+                  <td className="fw-500">{clienteNombre(r)}</td>
                   <td>{DEPORTE_EMOJI[r.deporte] || ""} {r.deporte || r.servicio}</td>
-                  <td style={{ color: "var(--gray-600)", fontSize: 13 }}>{r.cancha || "—"}</td>
+                  <td className="c-secondary-sm">{r.cancha || "—"}</td>
                   <td>{formatFecha(r.fecha)}</td>
-                  <td style={{ fontSize: 12, color: "var(--gray-600)" }}>{r.horario || "—"}</td>
-                  <td style={{ fontWeight: 600 }}>{formatMonto(r.monto)}</td>
+                  <td className="c-muted-xs">{r.horario || "—"}</td>
+                  <td className="fw-600">{formatMonto(r.monto)}</td>
                   <td><span className={`status ${STATUS_CLASS[r.estado]}`}>{r.estado}</span></td>
                   <td>
-                    <div style={{ display: "flex", gap: 5 }}>
-                      <button className="btn" style={{ padding: "3px 10px", fontSize: 12 }} onClick={() => openView(r)}>Ver</button>
-                      <button className="btn" style={{ padding: "3px 10px", fontSize: 12 }} onClick={() => openEdit(r)}>Editar</button>
-                      <button className="btn" style={{ padding: "3px 10px", fontSize: 12, color: "var(--red)", borderColor: "var(--red)" }} onClick={() => openDelete(r)}>Eliminar</button>
+                    <div className="actions-row">
+                      <button className="btn btn-sm" onClick={() => openView(r)}>Ver</button>
+                      <button className="btn btn-sm" onClick={() => openEdit(r)}>Editar</button>
+                      <button className="btn btn-sm btn-icon-danger" onClick={() => openDelete(r)}>Eliminar</button>
                     </div>
                   </td>
                 </tr>
@@ -265,67 +331,17 @@ export default function TabReservas() {
         </div>
       </div>
 
-      {/* ── Modal Ver detalle ─────────────────────────────────────────────── */}
-      {modal?.mode === "view" && (() => {
-        const r = modal.data;
-        const c = clientes.find((cl) => cl.id === r.clienteId);
-        return (
-          <Modal title={`Detalle — ${r.id}`} onClose={closeModal}>
-            {c && (
-              <div style={{
-                background: "var(--accent-muted)",
-                border: "1px solid var(--accent-border)",
-                borderRadius: 8,
-                padding: "10px 14px",
-                marginBottom: 14,
-                display: "flex",
-                gap: 16,
-                fontSize: 13,
-              }}>
-                <div>
-                  <span style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.4px" }}>Cliente</span>
-                  <div style={{ fontWeight: 600, color: "var(--text-primary)", marginTop: 2 }}>
-                    {c.nombre}
-                    {c.origen === "whatsapp" && (
-                      <span style={{ marginLeft: 7, fontSize: 10, fontWeight: 600, background: "rgba(37,211,102,0.12)", color: "#25D366", border: "1px solid rgba(37,211,102,0.25)", padding: "1px 7px", borderRadius: 20 }}>WA</span>
-                    )}
-                  </div>
-                </div>
-                {c.telefono && <div><span style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, textTransform: "uppercase" }}>Teléfono</span><div style={{ marginTop: 2 }}>{c.telefono}</div></div>}
-                {c.email    && <div><span style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 600, textTransform: "uppercase" }}>Email</span><div style={{ marginTop: 2 }}>{c.email}</div></div>}
-              </div>
-            )}
-            <div className="detail-grid">
-              {[
-                ["ID",       r.id],
-                ["Deporte",  `${DEPORTE_EMOJI[r.deporte] || ""} ${r.deporte || "—"}`],
-                ["Cancha",   r.cancha || "—"],
-                ["Local",    LOCALES[r.localId]?.nombre || "—"],
-                ["Fecha",    formatFecha(r.fecha)],
-                ["Horario",  r.horario || "—"],
-                ["Personas", r.personas],
-                ["Monto",    formatMonto(r.monto)],
-                ["Seña",     formatMonto(r.sena || 0)],
-                ["Estado",   r.estado],
-                ["Notas",    r.notas || "—"],
-              ].map(([k, v]) => (
-                <div key={k} className="detail-row">
-                  <span className="detail-label">{k}</span>
-                  <span className="detail-value">
-                    {k === "Estado" ? <span className={`status ${STATUS_CLASS[v]}`}>{v}</span> : v}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: "1.25rem" }}>
-              <button className="btn" onClick={() => { closeModal(); openEdit(r); }}>Editar</button>
-              <button className="btn" onClick={closeModal}>Cerrar</button>
-            </div>
-          </Modal>
-        );
-      })()}
+      {/* Modal Ver detalle */}
+      {modal?.mode === "view" && (
+        <ModalDetalle
+          reserva={modal.data}
+          clientes={clientes}
+          onClose={closeModal}
+          onEdit={(r) => { closeModal(); openEdit(r); }}
+        />
+      )}
 
-      {/* ── Modal Alta / Edición ──────────────────────────────────────────── */}
+      {/* Modal Alta / Edición */}
       {(modal?.mode === "add" || modal?.mode === "edit") && (
         <Modal
           title={modal.mode === "add" ? "Nueva reserva" : `Editar — ${modal.data.id}`}
@@ -336,38 +352,40 @@ export default function TabReservas() {
 
             {/* Cliente */}
             <div className="form-group form-full">
-              <label className="form-label">Cliente *</label>
-              <select
-                className={`form-input ${errors.clienteId ? "input-error" : ""}`}
-                value={form.clienteId}
-                onChange={handleClienteChange}
-              >
-                <option value="">Seleccioná un cliente</option>
-                {clientes.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nombre}{c.telefono ? ` — ${c.telefono}` : ""}{c.origen === "whatsapp" ? " (WA)" : ""}
-                  </option>
-                ))}
-              </select>
-              {errors.clienteId && <span className="form-error">{errors.clienteId}</span>}
-              {/* Info del cliente seleccionado */}
-              {clienteSeleccionado && (
-                <div style={{
-                  marginTop: 8,
-                  padding: "8px 12px",
-                  background: "var(--accent-muted)",
-                  border: "1px solid var(--accent-border)",
-                  borderRadius: 6,
-                  fontSize: 12,
-                  color: "var(--text-secondary)",
-                  display: "flex",
-                  gap: 16,
-                  flexWrap: "wrap",
-                }}>
-                  {clienteSeleccionado.telefono && <span>📞 {clienteSeleccionado.telefono}</span>}
-                  {clienteSeleccionado.email    && <span>✉ {clienteSeleccionado.email}</span>}
-                  {clienteSeleccionado.ciudad   && <span>📍 {clienteSeleccionado.ciudad}</span>}
+              <label className="form-label">Cliente {modal.mode === "add" ? "*" : ""}</label>
+              {modal.mode === "edit" ? (
+                <div className="client-readonly-box">
+                  <span className="client-readonly-name">
+                    {clienteSeleccionado?.nombre || clienteNombre(modal.data)}
+                    {clienteSeleccionado?.origen === "whatsapp" && <span className="badge-wa">WA</span>}
+                  </span>
+                  {clienteSeleccionado?.telefono && <span>📞 {clienteSeleccionado.telefono}</span>}
+                  {clienteSeleccionado?.email    && <span>✉ {clienteSeleccionado.email}</span>}
+                  {clienteSeleccionado?.ciudad   && <span>📍 {clienteSeleccionado.ciudad}</span>}
                 </div>
+              ) : (
+                <>
+                  <select
+                    className={`form-input ${errors.clienteId ? "input-error" : ""}`}
+                    value={form.clienteId}
+                    onChange={handleClienteChange}
+                  >
+                    <option value="">Seleccioná un cliente</option>
+                    {clientes.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.nombre}{c.telefono ? ` — ${c.telefono}` : ""}{c.origen === "whatsapp" ? " (WA)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.clienteId && <span className="form-error">{errors.clienteId}</span>}
+                  {clienteSeleccionado && (
+                    <div className="client-info-box">
+                      {clienteSeleccionado.telefono && <span>📞 {clienteSeleccionado.telefono}</span>}
+                      {clienteSeleccionado.email    && <span>✉ {clienteSeleccionado.email}</span>}
+                      {clienteSeleccionado.ciudad   && <span>📍 {clienteSeleccionado.ciudad}</span>}
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
@@ -433,9 +451,7 @@ export default function TabReservas() {
                 ))}
               </select>
               {form.horaInicio && (
-                <span style={{ fontSize: 12, color: "var(--gray-400)", marginTop: 4, display: "block" }}>
-                  Turno: {buildHorario(form.horaInicio, form.horas)}
-                </span>
+                <span className="form-hint">Turno: {buildHorario(form.horaInicio, form.horas)}</span>
               )}
             </div>
 
@@ -443,11 +459,7 @@ export default function TabReservas() {
             <div className="form-group">
               <label className="form-label">Cancha *</label>
               {todasOcupadas ? (
-                <div style={{
-                  background: "var(--red-light)", border: "1px solid var(--red)",
-                  borderRadius: 6, padding: "8px 12px", fontSize: 13,
-                  color: "var(--red)", fontWeight: 500, display: "flex", alignItems: "center", gap: 6,
-                }}>
+                <div className="alert-no-availability">
                   ⛔ No hay canchas disponibles para ese día y horario
                 </div>
               ) : (
@@ -476,16 +488,13 @@ export default function TabReservas() {
             <div className="form-group">
               <label className="form-label">Monto ($)</label>
               <input
-                className="form-input"
+                className="form-input input-readonly"
                 type="number"
                 value={form.monto}
-                onChange={(e) => {
-                  const m = parseFloat(e.target.value) || 0;
-                  setForm((f) => ({ ...f, monto: m, sena: Math.round(m * senaPct) }));
-                }}
+                readOnly
               />
               {form.deporte && form.horas > 1 && (
-                <span style={{ fontSize: 12, color: "var(--gray-400)", marginTop: 4, display: "block" }}>
+                <span className="form-hint">
                   {formatMonto(getPrecio(form.deporte))}/h × {form.horas}h
                 </span>
               )}
@@ -493,20 +502,29 @@ export default function TabReservas() {
 
             {/* Seña */}
             <div className="form-group">
-              <label className="form-label">Seña {config?.sena ?? 30}% ($)</label>
+              <label className="form-label">Ya pagado ($)</label>
               <input
-                className="form-input"
+                className="form-input input-readonly"
                 type="number"
                 value={form.sena}
                 readOnly
-                style={{ background: "var(--gray-100)", color: "var(--gray-600)" }}
               />
+              <span className="form-hint">
+                {form.estado === "Pendiente"  && "Sin cobro aún"}
+                {form.estado === "Seña"       && `Seña del ${config?.sena ?? 30}% cobrada`}
+                {form.estado === "Confirmada" && "Monto total cobrado"}
+                {form.estado === "Cancelada"  && "Reserva cancelada"}
+              </span>
             </div>
 
             {/* Estado */}
             <div className="form-group">
               <label className="form-label">Estado</label>
-              <select className="form-input" value={form.estado} onChange={(e) => setField("estado", e.target.value)}>
+              <select
+                className="form-input"
+                value={form.estado}
+                onChange={(e) => handleEstadoChange(e.target.value)}
+              >
                 {ESTADOS.map((e) => <option key={e}>{e}</option>)}
               </select>
             </div>
@@ -524,29 +542,25 @@ export default function TabReservas() {
             </div>
           </div>
 
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: "1.25rem" }}>
+          <div className="modal-actions">
             <button className="btn" onClick={closeModal}>Cancelar</button>
-            <button className="btn btn-primary" onClick={handleSave} disabled={todasOcupadas}>
+            <button className="btn btn-primary" onClick={handleSave} disabled={modal.mode === "add" && todasOcupadas}>
               {modal.mode === "add" ? "Guardar reserva" : "Actualizar"}
             </button>
           </div>
         </Modal>
       )}
 
-      {/* ── Modal Eliminar ────────────────────────────────────────────────── */}
+      {/* Modal Eliminar */}
       {modal?.mode === "delete" && (
         <Modal title="Eliminar reserva" onClose={closeModal} size="sm">
-          <p style={{ color: "var(--gray-600)", marginBottom: "1rem" }}>
+          <p className="modal-confirm-text">
             ¿Eliminás la reserva <strong>{modal.data.id}</strong> de{" "}
             <strong>{clienteNombre(modal.data)}</strong>? Esta acción no se puede deshacer.
           </p>
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+          <div className="modal-actions">
             <button className="btn" onClick={closeModal}>Cancelar</button>
-            <button
-              className="btn"
-              style={{ background: "var(--red)", color: "#fff", borderColor: "var(--red)" }}
-              onClick={() => { deleteReserva(modal.data.id); closeModal(); }}
-            >
+            <button className="btn btn-delete" onClick={() => { deleteReserva(modal.data.id); closeModal(); }}>
               Eliminar
             </button>
           </div>

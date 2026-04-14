@@ -10,8 +10,8 @@ export const CANCHAS = [
 ];
 
 export const LOCALES = {
-  "local-1": { nombre:"TanCat — Local Centro", direccion:"Av. Colón 1234, Córdoba" },
-  "local-2": { nombre:"TanCat — Local Norte",  direccion:"Ruta 36 Km 45, Córdoba"  },
+  "local-1": { nombre:"TanCat — Local Jacinto Ríos", direccion:"Jacinto Ríos 232, Córdoba" },
+  "local-2": { nombre:"TanCat — Rincón",  direccion:"Rincón 985, Córdoba"  },
 };
 
 export const HORARIOS = Array.from({ length:14 }, (_,i) => {

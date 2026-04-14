@@ -2,32 +2,29 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Config — solo lectura pública, escritura solo autenticados
+    // Config — lectura y escritura pública (dashboard sin Firebase Auth)
     match /config/{docId} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow read, write: if true;
     }
 
-    // Reservas — lectura y escritura pública (el chatbot crea reservas sin auth)
+    // Reservas — público (el bot crea reservas sin auth, el dashboard las gestiona)
     match /reservas/{docId} {
-      allow read: if true;
-      allow create: if true;
-      allow update, delete: if request.auth != null;
+      allow read, write: if true;
     }
 
-    // Clientes — solo autenticados
+    // Clientes — público (el bot crea clientes sin auth, el dashboard los gestiona)
     match /clientes/{docId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if true;
     }
 
-    // Ventas — solo autenticados
+    // Ventas — público (el dashboard las gestiona sin Firebase Auth)
     match /ventas/{docId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if true;
     }
 
-    // Stock — solo autenticados
+    // Stock — público (el dashboard lo gestiona sin Firebase Auth)
     match /stock/{docId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if true;
     }
   }
 }
