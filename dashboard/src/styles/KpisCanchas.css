@@ -1,0 +1,97 @@
+/* ══════════════════════════════════════════════════════
+   KpisCanchas.css — KPIs analíticos del módulo Canchas
+══════════════════════════════════════════════════════ */
+
+.kpics-section { display: flex; flex-direction: column; gap: 16px; margin-top: 0; margin-bottom: 0; }
+
+.kpics-header { display: flex; align-items: center; justify-content: space-between; }
+.kpics-title  { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+
+.kpics-row-2 { display: flex; gap: 16px; flex-wrap: wrap; }
+.kpics-row-2 > * { flex: 1; min-width: 260px; }
+
+.kpic-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+
+.kpic-full { width: 100%; }
+.kpic-half { flex: 1; min-width: 0; }
+
+.kpic-title { font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
+.kpic-sub   { font-size: 11px; color: var(--text-muted); margin-bottom: 12px; }
+
+.kpic-empty {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; color: #166534; background: #DCFCE7;
+  padding: 10px; border-radius: 8px; font-weight: 500;
+}
+
+/* ── Heatmap canchas × horario ── */
+.heatmap-c-wrap { overflow-x: auto; }
+
+.heatmap-c-grid {
+  display: grid;
+  grid-template-columns: 80px repeat(14, 1fr);
+  gap: 3px;
+  min-width: 560px;
+}
+
+.hmc-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  border-radius: 4px;
+}
+
+.hmc-header {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+}
+
+.hmc-row-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: transparent;
+  justify-content: flex-end;
+  padding-right: 4px;
+  text-align: right;
+}
+
+.hmc-data {
+  background: rgba(55,138,221,0.07);
+  cursor: default;
+  transition: opacity 0.15s;
+}
+.hmc-data:hover { opacity: 0.75; }
+
+.hmc-val {
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+  pointer-events: none;
+}
+
+.hmc-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.hmc-legend-bar {
+  flex: 1;
+  max-width: 120px;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, rgba(55,138,221,0.08), rgba(55,138,221,0.95));
+}

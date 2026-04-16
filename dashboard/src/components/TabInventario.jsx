@@ -3,27 +3,39 @@ import "../styles/TabInventario.css";
 import { useState } from "react";
 import { useStore } from "../data/store.jsx";
 import Modal from "./Modal";
+import KpisInventario from "./KpisInventario.jsx";
 
+// Colores semánticos con contraste verificado (WebAIM AA)
+function getStockLevel(pct) {
+  if (pct < 20) return { color: "#991B1B", bg: "#FEE2E2", label: "Crítico", icon: "⚠" };
+  if (pct < 45) return { color: "#854D0E", bg: "#FEF9C3", label: "Bajo",    icon: "🔔" };
+  return          { color: "#166534", bg: "#DCFCE7", label: "Normal",  icon: "✓" };
+}
 function getColor(pct) {
-  if (pct < 20) return "#e24b4a";
-  if (pct < 45) return "#ef9f27";
-  return "#1d9e75";
+  return getStockLevel(pct).color;
 }
 
-const EMPTY = { nombre: "", cantidad: 0, max: 100, unidad: "u" };
+const EMPTY = { nombre: "", cantidad: 0, max: 100, unidad: "u", precioUnitario: 0 };
 const UNIDADES = ["u", "kg", "l", "caja"];
 
 function StockRow({ item, onEdit, onDelete }) {
-  const pct = item.max > 0 ? Math.round((item.cantidad / item.max) * 100) : 0;
-  const color = getColor(pct);
+  const pct   = item.max > 0 ? Math.round((item.cantidad / item.max) * 100) : 0;
+  const level = getStockLevel(pct);
   return (
     <div className="stock-row">
       <span className="stock-name">{item.nombre}</span>
       <div className="stock-bar-bg">
-        <div className="stock-bar" style={{ '--bar-w': `${pct}%`, '--bar-c': color }} />
+        <div className="stock-bar" style={{ '--bar-w': `${pct}%`, '--bar-c': level.color }} />
       </div>
       <span className="stock-qty">{item.cantidad}/{item.max} {item.unidad}</span>
-      <span className="stock-pct" style={{ '--stock-c': color }}>{pct}%</span>
+      <span className="stock-precio">${(item.precioUnitario ?? 0).toLocaleString("es-AR")}</span>
+      <span
+        className="stock-badge"
+        style={{ '--badge-color': level.color, '--badge-bg': level.bg }}
+        title={`Stock ${level.label}`}
+      >
+        {level.icon} {level.label}
+      </span>
       <div className="inv-actions">
         <button className="btn btn-sm" onClick={() => onEdit(item)}>Editar</button>
         <button className="btn btn-sm btn-icon-danger" onClick={() => onDelete(item)}>Eliminar</button>
@@ -86,6 +98,8 @@ export default function TabInventario() {
         </div>
       )}
 
+      <KpisInventario stock={stock} />
+
       <div className="card">
         <div className="card-header">
           <div>
@@ -93,9 +107,15 @@ export default function TabInventario() {
             <div className="card-sub">{stock.length} productos registrados</div>
           </div>
           <div className="chart-legend">
-            {[["#1d9e75","OK"],["#ef9f27","Bajo"],["#e24b4a","Crítico"]].map(([c,l]) => (
-              <span key={l} className="legend-item">
-                <span className="legend-sq" style={{ '--sq-c': c }} />{l}
+            {[
+              { color: "#166534", bg: "#DCFCE7", icon: "✓",  label: "Normal"  },
+              { color: "#854D0E", bg: "#FEF9C3", icon: "🔔", label: "Bajo"    },
+              { color: "#991B1B", bg: "#FEE2E2", icon: "⚠",  label: "Crítico" },
+            ].map(({ color, bg, icon, label }) => (
+              <span key={label} className="legend-item">
+                <span className="legend-badge" style={{ '--badge-color': color, '--badge-bg': bg }}>
+                  {icon} {label}
+                </span>
               </span>
             ))}
           </div>
@@ -131,6 +151,17 @@ export default function TabInventario() {
               <select className="form-input" value={form.unidad} onChange={(e) => setField("unidad", e.target.value)}>
                 {UNIDADES.map((u) => <option key={u}>{u}</option>)}
               </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Precio unitario ($)</label>
+              <input
+                className="form-input"
+                type="number"
+                min="0"
+                value={form.precioUnitario ?? 0}
+                onChange={(e) => setField("precioUnitario", parseFloat(e.target.value) || 0)}
+                placeholder="Ej: 500"
+              />
             </div>
           </div>
           <div className="modal-actions">

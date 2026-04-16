@@ -3,6 +3,15 @@ import "../styles/Sidebar.css";
 import { useStore } from "../data/store.jsx";
 
 const icons = {
+  canchas: (
+    <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="4" width="20" height="16" rx="2"/>
+      <line x1="12" y1="4" x2="12" y2="20"/>
+      <line x1="2" y1="12" x2="22" y2="12"/>
+      <circle cx="6"  cy="8"  r="1.2" fill="currentColor"/>
+      <circle cx="18" cy="16" r="1.2" fill="currentColor"/>
+    </svg>
+  ),
   resumen: (
     <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="12" width="4" height="9" rx="1"/>
@@ -74,6 +83,7 @@ const navItems = [
     label: "Gestión",
     items: [
       { id: "reservas",   text: "Reservas"   },
+      { id: "canchas",    text: "Canchas"    },
       { id: "clientes",   text: "Clientes"   },
       { id: "ventas",     text: "Ventas"     },
       { id: "inventario", text: "Inventario" },

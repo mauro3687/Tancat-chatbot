@@ -115,4 +115,82 @@
 .rep-export-btns {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.rep-export-btns .btn-primary:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+/* ── rep-card (reemplaza al card genérico en reportes) ── */
+.rep-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+
+.rep-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.rep-card-title { font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
+.rep-card-sub   { font-size: 11px; color: var(--text-muted); }
+
+.rep-empty {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 120px; font-size: 13px; color: var(--text-muted);
+}
+
+/* ── Pills (reutilizadas de KpisReservas) ── */
+.kpis-filter-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+.pill {
+  padding: 3px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.pill:hover  { background: rgba(29,158,117,0.08); }
+.pill-active { background: #1d9e75; color: #fff; border-color: #1d9e75; }
+
+/* ── Waterfall legend ── */
+.wf-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+.wf-legend-item {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; color: var(--text-secondary);
+}
+.wf-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+
+/* ── Gauge ── */
+.gauge-card  { display: flex; flex-direction: column; }
+.gauge-wrap  { display: flex; flex-direction: column; align-items: center; }
+.gauge-svg   { width: 100%; max-width: 240px; }
+.gauge-legend {
+  display: flex; gap: 12px; flex-wrap: wrap;
+  justify-content: center; margin-top: 8px;
+}
+.gauge-item {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; color: var(--text-secondary);
+}
+.gauge-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
 }

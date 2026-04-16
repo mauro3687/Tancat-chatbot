@@ -1,6 +1,16 @@
 // src/components/TabResumen.jsx
+import { useMemo } from "react";
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, ReferenceLine,
+} from "recharts";
 import { useStore } from "../data/store.jsx";
+import KpisReservas from "./KpisReservas.jsx";
+import { DEPORTE_EMOJI } from "../data/canchas.js";
 import "../styles/TabResumen.css";
+
+const STATUS_CLASS = { Confirmada: "s-confirmed", Pendiente: "s-pending", Seña: "s-sena", Cancelada: "s-cancelled" };
+const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
 function MetricCard({ label, value, delta, type }) {
   return (
@@ -14,116 +24,137 @@ function MetricCard({ label, value, delta, type }) {
   );
 }
 
-function BarChart({ labels, values, color = "#1d9e75", height = 160 }) {
-  const max = Math.max(...values, 1);
-  return (
-    <div className="bar-chart" style={{ '--chart-h': `${height}px` }}>
-      {values.map((v, i) => (
-        <div key={i} className="bar-chart-item">
-          <div className="bar-chart-bar-wrap">
-            <div
-              className="bar-chart-bar"
-              style={{ '--bar-h': `${(v / max) * 100}%`, '--bar-c': color }}
-            />
-          </div>
-          <span className="bar-chart-label">{labels[i]}</span>
-          <span className="bar-chart-value">{v}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
+// ── Ingresos mensuales del año actual (LineChart) ───────────────────────────
+// Pregunta: "¿Cómo evoluciona la facturación mes a mes este año?"
+function LineIngresosAnuales({ ventas, reservas }) {
+  const year = new Date().getFullYear();
+  const mesActual = new Date().getMonth(); // 0-indexed
 
-function DonaChart({ confirmadas, pendientes, canceladas }) {
-  const total = confirmadas + pendientes + canceladas || 1;
-  const items = [
-    { label: "Confirmadas", value: confirmadas, color: "#1d9e75" },
-    { label: "Pendientes",  value: pendientes,  color: "#ef9f27" },
-    { label: "Canceladas",  value: canceladas,  color: "#e24b4a" },
-  ];
-  let pct = 0;
-  const stops = items.map(({ value, color }) => {
-    const start = pct;
-    pct += (value / total) * 360;
-    return `${color} ${start.toFixed(1)}deg ${pct.toFixed(1)}deg`;
-  }).join(", ");
+  const data = useMemo(() => {
+    return MESES.map((mes, i) => {
+      const prefix = `${year}-${String(i + 1).padStart(2, "0")}`;
+      const ingVentas = ventas
+        .filter((v) => (v.fecha ?? "").startsWith(prefix))
+        .reduce((s, v) => s + (Number(v.monto) || 0), 0);
+      const ingReservas = reservas
+        .filter((r) => (r.fecha ?? "").startsWith(prefix) && r.estado !== "Cancelada")
+        .reduce((s, r) => s + (Number(r.monto) || 0), 0);
+      return {
+        mes,
+        "Reservas ($K)": Math.round(ingReservas / 1000),
+        "Ventas ($K)":   Math.round(ingVentas   / 1000),
+        total:           Math.round((ingReservas + ingVentas) / 1000),
+        futuro:          i > mesActual,
+      };
+    });
+  }, [ventas, reservas, year]);
 
-  return (
-    <div className="dona-chart">
-      <div className="dona-circle-wrap">
-        <div className="dona-circle" style={{ '--dona-grad': `conic-gradient(${stops})` }} />
-        <div className="dona-center">
-          <span className="dona-total">{total}</span>
-          <span className="dona-sub">reservas</span>
-        </div>
-      </div>
-      <div className="chart-legend dona-legend">
-        {items.map(({ label, value, color }) => (
-          <span key={label} className="legend-item">
-            <span className="legend-sq" style={{ '--sq-c': color }} />
-            {label} {value}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ChartBarras({ reservas, ventas }) {
-  const semanas = [];
-  const resData = [];
-  const ventData = [];
-  const now = new Date();
-
-  for (let i = 5; i >= 0; i--) {
-    const desde = new Date(now);
-    desde.setDate(now.getDate() - i * 7 - 6);
-    const hasta = new Date(now);
-    hasta.setDate(now.getDate() - i * 7);
-
-    semanas.push(`S${6 - i}`);
-    const desdeStr = desde.toISOString().split("T")[0];
-    const hastaStr = hasta.toISOString().split("T")[0];
-
-    resData.push(reservas.filter((r) => r.fecha >= desdeStr && r.fecha <= hastaStr).length);
-    ventData.push(ventas.filter((v) => v.fecha >= desdeStr && v.fecha <= hastaStr)
-      .reduce((s, v) => s + (Number(v.monto) || 0), 0) / 1000);
-  }
+  const totalAnual = data.reduce((s, d) => s + d["Reservas ($K)"] + d["Ventas ($K)"], 0);
 
   return (
     <div className="card">
       <div className="card-header">
         <div>
-          <div className="card-title">Reservas y ventas</div>
-          <div className="card-sub">Últimas 6 semanas</div>
+          <div className="card-title">Ingresos mensuales {year}</div>
+          <div className="card-sub">Reservas + ventas · Total acumulado: <strong>${totalAnual}K</strong></div>
+        </div>
+        <div className="chart-legend">
+          <span className="legend-item"><span className="legend-sq" style={{ '--sq-c': "#1d9e75" }} />Reservas</span>
+          <span className="legend-item"><span className="legend-sq" style={{ '--sq-c': "#378add" }} />Ventas</span>
         </div>
       </div>
-      <div className="chart-legend">
-        <span className="legend-item">
-          <span className="legend-sq" style={{ '--sq-c': "#1d9e75" }} />Reservas
-        </span>
-        <span className="legend-item">
-          <span className="legend-sq" style={{ '--sq-c': "#378add" }} />Ventas ($K)
-        </span>
-      </div>
-      <div className="chart-barras-grid">
-        <BarChart labels={semanas} values={resData} color="#1d9e75" height={140} />
-        <BarChart labels={semanas} values={ventData} color="#378add" height={140} />
-      </div>
+      <ResponsiveContainer width="100%" height={200}>
+        <LineChart data={data} margin={{ top: 8, right: 12, left: -10, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.08)" />
+          <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
+          <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}K`} />
+          <Tooltip
+            formatter={(v, name) => [`$${v}K`, name]}
+            contentStyle={{ fontSize: 12 }}
+          />
+          <ReferenceLine
+            x={MESES[mesActual]}
+            stroke="rgba(0,0,0,0.2)"
+            strokeDasharray="4 3"
+            label={{ value: "Hoy", position: "top", fontSize: 10, fill: "var(--text-muted, #888)" }}
+          />
+          <Line
+            type="monotone" dataKey="Reservas ($K)"
+            stroke="#1d9e75" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }}
+          />
+          <Line
+            type="monotone" dataKey="Ventas ($K)"
+            stroke="#378add" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
     </div>
   );
 }
 
+// ── Turnos de hoy (mini tabla operativa) ────────────────────────────────────
+// Pregunta: "¿Qué turnos tengo programados hoy?"
+function TurnosHoy({ reservas, clientes }) {
+  const hoy = new Date().toISOString().split("T")[0];
+
+  const turnosHoy = useMemo(() => {
+    return reservas
+      .filter((r) => r.fecha === hoy && r.estado !== "Cancelada")
+      .map((r) => {
+        const cliente = clientes.find((c) => c.id === r.clienteId);
+        return { ...r, nombreCliente: cliente?.nombre ?? r.cliente ?? "—" };
+      })
+      .sort((a, b) => (a.horario ?? "").localeCompare(b.horario ?? ""));
+  }, [reservas, clientes, hoy]);
+
+  const fmt = (n) => `$${Number(n).toLocaleString("es-AR")}`;
+
+  return (
+    <div className="card">
+      <div className="card-header">
+        <div>
+          <div className="card-title">Turnos de hoy</div>
+          <div className="card-sub">
+            {turnosHoy.length === 0
+              ? "Sin turnos programados"
+              : `${turnosHoy.length} turno${turnosHoy.length !== 1 ? "s" : ""} · ${new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}`}
+          </div>
+        </div>
+      </div>
+      {turnosHoy.length === 0 ? (
+        <div className="turnos-vacio">
+          <span className="turnos-vacio-icon">📅</span>
+          <span>No hay turnos registrados para hoy</span>
+        </div>
+      ) : (
+        <div className="turnos-lista">
+          {turnosHoy.map((r) => (
+            <div key={r.id} className="turno-row">
+              <span className="turno-hora">{r.horario?.split("—")[0]?.trim() ?? "—"}</span>
+              <span className="turno-deporte">{DEPORTE_EMOJI[r.deporte] ?? "🎾"}</span>
+              <div className="turno-info">
+                <span className="turno-cliente">{r.nombreCliente}</span>
+                <span className="turno-cancha">{r.cancha ?? "—"} · {r.horario ?? "—"}</span>
+              </div>
+              <span className="turno-monto">{fmt(r.monto)}</span>
+              <span className={`status ${STATUS_CLASS[r.estado] ?? ""}`}>{r.estado}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Componente principal ────────────────────────────────────────────────────
 export default function TabResumen() {
   const { reservas, clientes, ventas, stock } = useStore();
 
-  const hoy = new Date().toISOString().split("T")[0];
-  const reservasHoy    = reservas.filter((r) => r.fecha === hoy).length;
-  const totalVentasMes = ventas.reduce((s, v) => s + (Number(v.monto) || 0), 0);
-  const productosBajos = stock.filter((s) => s.max > 0 && (s.cantidad / s.max) < 0.45).length;
-  const confirmadas    = reservas.filter((r) => r.estado === "Confirmada").length;
-  const pendientes     = reservas.filter((r) => r.estado === "Pendiente").length;
-  const canceladas     = reservas.filter((r) => r.estado === "Cancelada").length;
+  const hoy              = new Date().toISOString().split("T")[0];
+  const reservasHoy      = reservas.filter((r) => r.fecha === hoy).length;
+  const totalVentasMes   = ventas.reduce((s, v) => s + (Number(v.monto) || 0), 0);
+  const productosBajos   = stock.filter((s) => s.max > 0 && (s.cantidad / s.max) < 0.45).length;
+  const pendientesCount  = reservas.filter((r) => r.estado === "Pendiente").length;
 
   return (
     <div>
@@ -134,27 +165,42 @@ export default function TabResumen() {
         </div>
       </div>
 
+      {/* 4 KPIs operativos */}
       <div className="metrics-grid">
-        <MetricCard label="Reservas hoy"    value={reservasHoy}                                    delta={`${reservas.length} totales`}    type="up" />
-        <MetricCard label="Ventas del mes"  value={`$${totalVentasMes.toLocaleString("es-AR")}`}  delta={`${ventas.length} registros`}    type="up" />
-        <MetricCard label="Clientes"        value={clientes.length}                                delta="registrados"                     type="up" />
-        <MetricCard label="Stock bajo"      value={productosBajos}                                 delta="Requiere atención"               type={productosBajos > 0 ? "warn" : "up"} />
+        <MetricCard
+          label="Turnos hoy"
+          value={reservasHoy}
+          delta={`${reservas.length} totales`}
+          type="up"
+        />
+        <MetricCard
+          label="Ventas del mes"
+          value={`$${totalVentasMes.toLocaleString("es-AR")}`}
+          delta={`${ventas.length} registros`}
+          type="up"
+        />
+        <MetricCard
+          label="Pendientes de cobro"
+          value={pendientesCount}
+          delta={pendientesCount > 0 ? "Requieren seguimiento" : "Todo al día"}
+          type={pendientesCount > 0 ? "warn" : "up"}
+        />
+        <MetricCard
+          label="Stock bajo"
+          value={productosBajos}
+          delta="productos con reposición urgente"
+          type={productosBajos > 0 ? "warn" : "up"}
+        />
       </div>
 
+      {/* Gráficos: ingresos anuales + turnos de hoy */}
       <div className="charts-row">
-        <ChartBarras reservas={reservas} ventas={ventas} />
-        <div className="card">
-          <div className="card-header">
-            <div>
-              <div className="card-title">Estado de reservas</div>
-              <div className="card-sub">Distribución actual</div>
-            </div>
-          </div>
-          <div className="dona-wrap">
-            <DonaChart confirmadas={confirmadas} pendientes={pendientes} canceladas={canceladas} />
-          </div>
-        </div>
+        <LineIngresosAnuales ventas={ventas} reservas={reservas} />
+        <TurnosHoy reservas={reservas} clientes={clientes} />
       </div>
+
+      {/* KPIs de reservas: heatmap + área apilada + % ocupación */}
+      <KpisReservas reservas={reservas} />
     </div>
   );
 }

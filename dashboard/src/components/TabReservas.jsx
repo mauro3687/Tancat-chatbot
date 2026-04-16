@@ -99,7 +99,7 @@ function ModalDetalle({ reserva: r, clientes, onClose, onEdit }) {
 }
 
 export default function TabReservas() {
-  const { reservas, clientes, addReserva, updateReserva, deleteReserva, config } = useStore();
+  const { reservas, clientes, bloqueos, addReserva, updateReserva, deleteReserva, config } = useStore();
   const [search, setSearch] = useState("");
   const [filterEstado, setFilterEstado] = useState("");
   const [modal, setModal] = useState(null);
@@ -132,21 +132,28 @@ export default function TabReservas() {
     if (!form.deporte || !form.fecha || !form.horaInicio) {
       return { canchasLibres: CANCHAS.filter((c) => c.deporte === form.deporte), todasOcupadas: false };
     }
-    const hInicio = parseInt(form.horaInicio);
+    const hInicio    = parseInt(form.horaInicio);
     const nuevaRange = { inicio: hInicio, fin: hInicio + (form.horas || 1) };
-    const currentId = modal?.data?.id;
+    const currentId  = modal?.data?.id;
     const canchasDeporte = CANCHAS.filter((c) => c.deporte === form.deporte);
     const libres = canchasDeporte.filter((cancha) => {
-      const ocupada = reservas.some((r) => {
+      // Verificar conflicto con reservas activas
+      const conflictoReserva = reservas.some((r) => {
         if (r.canchaId !== cancha.id || r.fecha !== form.fecha) return false;
         if (r.estado === "Cancelada" || r.id === currentId) return false;
         const ex = parseHorarioRange(r.horario);
         return ex && ex.inicio < nuevaRange.fin && ex.fin > nuevaRange.inicio;
       });
-      return !ocupada;
+      // Verificar conflicto con bloqueos de mantenimiento
+      const bloqueada = bloqueos.some((b) => {
+        if (b.canchaId !== cancha.id || b.fecha !== form.fecha) return false;
+        const bh = parseInt(b.hora);
+        return bh >= nuevaRange.inicio && bh < nuevaRange.fin;
+      });
+      return !conflictoReserva && !bloqueada;
     });
     return { canchasLibres: libres, todasOcupadas: canchasDeporte.length > 0 && libres.length === 0 };
-  }, [form.deporte, form.fecha, form.horaInicio, form.horas, reservas, modal?.data?.id]);
+  }, [form.deporte, form.fecha, form.horaInicio, form.horas, reservas, bloqueos, modal?.data?.id]);
 
   const openAdd    = () => { setForm(EMPTY); setErrors({}); setModal({ mode: "add" }); };
   const openEdit   = (r) => {
@@ -265,20 +272,6 @@ export default function TabReservas() {
           </div>
         </div>
         <button className="btn btn-primary" onClick={openAdd}>+ Nueva reserva</button>
-      </div>
-
-      <div className="kpi-grid kpi-grid-4">
-        {[
-          { label: "Total",       val: totales.total,       color: "var(--gray-800)" },
-          { label: "Confirmadas", val: totales.confirmadas, color: "var(--green)" },
-          { label: "Pendientes",  val: totales.pendientes,  color: "var(--amber)" },
-          { label: "Canceladas",  val: totales.canceladas,  color: "var(--red)" },
-        ].map((c) => (
-          <div key={c.label} className="kpi-card">
-            <div className="metric-label">{c.label}</div>
-            <div className="kpi-value" style={{ '--kpi-c': c.color }}>{c.val}</div>
-          </div>
-        ))}
       </div>
 
       <div className="card">

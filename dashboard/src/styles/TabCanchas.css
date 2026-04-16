@@ -1,0 +1,194 @@
+/* ══════════════════════════════════════════════════════
+   TabCanchas.css — Grilla de canchas y modal de horarios
+══════════════════════════════════════════════════════ */
+
+/* ── Toast ── */
+.toast-fixed {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  animation: slideUp 0.2s ease;
+}
+@keyframes slideUp {
+  from { transform: translateY(10px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ── Grilla de canchas ── */
+.canchas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  padding-top: 8px;
+}
+
+/* ── Tarjeta de cancha ── */
+.cancha-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+  text-align: left;
+  transition: box-shadow 0.18s, border-color 0.18s, transform 0.1s;
+  display: flex;
+  flex-direction: column;
+}
+.cancha-card:hover {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.10);
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.court-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  padding: 12px 12px 4px;
+  box-sizing: border-box;
+}
+
+.cancha-card-body {
+  padding: 10px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cancha-card-nombre {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.cancha-card-local {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.cancha-card-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 12px;
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+/* ── Modal de horarios ── */
+.modal-horarios-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.mh-fecha-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mh-fecha-input { max-width: 160px; }
+.mh-summary {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.mh-chip {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+
+.mh-leyenda {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: var(--bg-secondary, rgba(0,0,0,0.03));
+  border-radius: 8px;
+}
+.mh-ley-item { font-weight: 500; }
+
+/* ── Grilla de bloques horarios ── */
+.horas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.hora-bloque {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 6px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  background: var(--hb-bg, #DCFCE7);
+  color: var(--hb-color, #166534);
+  font-size: 12px;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.hora-bloque:hover { opacity: 0.82; transform: scale(1.03); }
+
+.hora-disponible    { border-color: #86EFAC; }
+.hora-ocupado       { cursor: not-allowed; }
+.hora-mantenimiento { border-color: #D1D5DB; }
+
+.hb-hora  { font-weight: 700; font-size: 13px; }
+.hb-icon  { font-size: 14px; }
+.hb-label { font-size: 10px; font-weight: 500; opacity: 0.85; }
+
+/* ── Sección rango ── */
+.mh-rango-section { margin-bottom: 12px; }
+.mh-rango-form {
+  margin-top: 10px;
+  padding: 14px;
+  background: var(--bg-secondary, rgba(0,0,0,0.03));
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+/* ── Overlay de confirmación dentro del modal ── */
+.mh-confirm-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  border-radius: 12px;
+}
+.mh-confirm-box {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 360px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+}
+.mh-confirm-title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+.mh-confirm-desc  { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5; }
+
+/* SVG court colors */
+.court-padel   {}
+.court-basquet {}
+.court-voley   {}

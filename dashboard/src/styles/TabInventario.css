@@ -13,7 +13,7 @@
 
 .stock-row:last-child { border-bottom: none; }
 
-.stock-name   { min-width: 150px; font-size: 13px; color: var(--text-primary); }
+.stock-name   { min-width: 150px; font-size: 13px; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.03em; }
 
 .stock-bar-bg {
   flex: 1; height: 4px;
@@ -25,26 +25,68 @@
 .stock-bar    { height: 100%; width: var(--bar-w, 0%); background: var(--bar-c, var(--accent)); border-radius: 2px; transition: width 0.4s ease; }
 
 .stock-qty    { font-size: 12px; color: var(--text-muted); min-width: 55px; text-align: right; }
-.stock-pct    { font-size: 12px; font-weight: 600; min-width: 36px; text-align: right; color: var(--stock-c, var(--text-primary)); }
+.stock-precio { font-size: 12px; color: var(--text-muted); min-width: 60px; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Badge semántico: ícono + texto + fondo coloreado */
+.stock-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
+  min-width: 74px;
+  justify-content: center;
+  color: var(--badge-color);
+  background: var(--badge-bg);
+}
+
+.legend-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  color: var(--badge-color);
+  background: var(--badge-bg);
+}
 
 .inv-actions  { display: flex; gap: 5px; margin-left: 8px; }
 
+/* ── Alertas de inventario con paleta semántica accesible ── */
 .inv-alert-danger {
-  background: var(--red-light);
-  border: 1px solid #f09595;
+  background: #FEE2E2;
+  border: 1px solid #FCA5A5;
   border-radius: 10px;
   padding: 0.75rem 1rem;
   margin-bottom: 1rem;
   font-size: 13px;
-  color: #791f1f;
+  color: #991B1B;
+  font-weight: 500;
 }
 
 .inv-alert-warning {
-  background: var(--amber-light);
-  border: 1px solid #fac775;
+  background: #FEF9C3;
+  border: 1px solid #FDE047;
   border-radius: 10px;
   padding: 0.75rem 1rem;
   margin-bottom: 1rem;
   font-size: 13px;
-  color: #633806;
+  color: #854D0E;
+  font-weight: 500;
+}
+
+.inv-alert-ok {
+  background: #DCFCE7;
+  border: 1px solid #86EFAC;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 13px;
+  color: #166534;
+  font-weight: 500;
 }

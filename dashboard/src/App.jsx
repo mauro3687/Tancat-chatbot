@@ -10,6 +10,7 @@ import TabClientes from "./components/TabClientes";
 import TabVentas from "./components/TabVentas";
 import TabInventario from "./components/TabInventario";
 import TabReportes from "./components/TabReportes";
+import TabCanchas from "./components/TabCanchas";
 import TabConfiguracion from "./components/TabConfiguracion";
 import TabIA from "./components/TabIA";
 import TabWhatsApp from "./components/TabWhatsApp";
@@ -18,8 +19,8 @@ import "./styles/shared.css";
 
 // Tabs permitidos por rol
 const TAB_PERMISOS = {
-  admin:     ["resumen", "reservas", "clientes", "ventas", "inventario", "ia", "reportes", "whatsapp", "configuracion"],
-  encargado: ["reservas", "clientes", "ventas", "inventario", "configuracion"],
+  admin:     ["resumen", "reservas", "canchas", "clientes", "ventas", "inventario", "ia", "reportes", "whatsapp", "configuracion"],
+  encargado: ["reservas", "canchas", "clientes", "ventas", "inventario", "configuracion"],
 };
 
 function AppInner() {
@@ -36,6 +37,7 @@ function AppInner() {
   const tabs = {
     resumen:       <TabResumen />,
     reservas:      <TabReservas />,
+    canchas:       <TabCanchas />,
     clientes:      <TabClientes />,
     ventas:        <TabVentas />,
     inventario:    <TabInventario />,

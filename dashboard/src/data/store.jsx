@@ -71,6 +71,7 @@ export function StoreProvider({ children }) {
   const { data: clientes,  loading: loadingClientes  } = useCollection("clientes");
   const { data: ventas,    loading: loadingVentas    } = useCollection("ventas");
   const { data: stock,     loading: loadingStock     } = useCollection("stock");
+  const { data: bloqueos,  loading: loadingBloqueos  } = useCollection("bloqueos");
   const [config, setConfigLocal] = useState({
     nombre: "TanCat", razonSocial: "TanCat S.R.L.", cuit: "30-71234567-8",
     email: "info@tancat.com.ar", telefono: "351-000-0000",
@@ -79,7 +80,7 @@ export function StoreProvider({ children }) {
     precios: { padel: 8000, basquet: 12000, voley: 10000 },
   });
 
-  const loading = loadingReservas || loadingClientes || loadingVentas || loadingStock;
+  const loading = loadingReservas || loadingClientes || loadingVentas || loadingStock || loadingBloqueos;
 
   // ── Leer config desde Firestore ──
   useEffect(() => {
@@ -169,6 +170,46 @@ export function StoreProvider({ children }) {
     await deleteDoc(doc(db, "stock", id));
   };
 
+  // ── BLOQUEOS (mantenimiento / bloqueos manuales de horarios) ─────────────
+  // Estructura: { canchaId, fecha (YYYY-MM-DD), hora ("09:00"), motivo, tipo: "mantenimiento"|"bloqueo" }
+  const addBloqueo = async (data) => {
+    const ref = await addDoc(collection(db, "bloqueos"), {
+      ...data,
+      creadoEn: serverTimestamp(),
+    });
+    return ref.id;
+  };
+
+  // Crea múltiples bloqueos para un rango de fechas y horas (programar mantenimiento)
+  const addBloqueoRango = async ({ canchaId, fechaDesde, fechaHasta, horaDesde, horaHasta, motivo, tipo }) => {
+    const from = new Date(fechaDesde + "T12:00:00");
+    const to   = new Date(fechaHasta + "T12:00:00");
+    const hFrom = parseInt(horaDesde);
+    const hTo   = parseInt(horaHasta);
+    const promises = [];
+    for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
+      const fecha = d.toISOString().split("T")[0];
+      for (let h = hFrom; h < hTo; h++) {
+        const hora = `${String(h).padStart(2, "0")}:00`;
+        promises.push(addDoc(collection(db, "bloqueos"), {
+          canchaId, fecha, hora, motivo, tipo,
+          creadoEn: serverTimestamp(),
+        }));
+      }
+    }
+    await Promise.all(promises);
+  };
+
+  const deleteBloqueo = async (id) => {
+    await deleteDoc(doc(db, "bloqueos", id));
+  };
+
+  // Elimina todos los bloqueos de una cancha en una fecha
+  const deleteBloqueosCanchaFecha = async (canchaId, fecha) => {
+    const toDelete = bloqueos.filter((b) => b.canchaId === canchaId && b.fecha === fecha);
+    await Promise.all(toDelete.map((b) => deleteDoc(doc(db, "bloqueos", b.id))));
+  };
+
   // ── CONFIG ────────────────────────────────────────────────────────────────
   const updateConfig = async (data) => {
     setConfigLocal((prev) => ({ ...prev, ...data }));
@@ -187,7 +228,7 @@ export function StoreProvider({ children }) {
       // Auth
       currentUser, login, logout,
       // Datos
-      reservas, clientes, ventas, stock, config, loading,
+      reservas, clientes, ventas, stock, config, bloqueos, loading,
       // Reservas
       addReserva, updateReserva, deleteReserva,
       // Clientes
@@ -196,6 +237,8 @@ export function StoreProvider({ children }) {
       addVenta, updateVenta, deleteVenta,
       // Stock
       addStock, updateStock, deleteStock,
+      // Bloqueos
+      addBloqueo, addBloqueoRango, deleteBloqueo, deleteBloqueosCanchaFecha,
       // Config
       updateConfig,
       // Constantes
