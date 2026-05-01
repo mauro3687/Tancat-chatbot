@@ -3,7 +3,7 @@ import "../styles/TabInventario.css";
 import { useState, useMemo } from "react";
 import { useStore } from "../data/store.jsx";
 import Modal from "./Modal";
-import KpisInventario from "./KpisInventario.jsx";
+import KpisInventario from "./kpis/KpisInventario.jsx";
 
 // ── SVG Icons ─────────────────────────────────────────────────────────────────
 function IcoWarning({ s = 13 }) {
@@ -37,13 +37,6 @@ function IcoUsers({ s = 13 }) {
       <circle cx="9" cy="7" r="4"/>
       <path d="M23 21v-2a4 4 0 00-3-3.87"/>
       <path d="M16 3.13a4 4 0 010 7.75"/>
-    </svg>
-  );
-}
-function IcoTool({ s = 13 }) {
-  return (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>
     </svg>
   );
 }
@@ -93,9 +86,8 @@ const UNIDADES = ["u", "kg", "l", "caja", "par", "rollo"];
 
 // ── Tabs ─────────────────────────────────────────────────────────────────────
 const TABS = [
-  { id: "prestamos",  label: "Préstamos",          Icon: IcoUsers },
-  { id: "emergencia", label: "Emergencia y Mant.",  Icon: IcoTool  },
-  { id: "venta",      label: "Venta",               Icon: IcoCart  },
+  { id: "prestamos", label: "Equipamiento", Icon: IcoUsers },
+  { id: "venta",     label: "Consumibles",  Icon: IcoCart  },
 ];
 
 // ── Estados de préstamo ───────────────────────────────────────────────────────
@@ -154,36 +146,25 @@ function StockRow({ item, onEdit, onDelete, onConsumo }) {
 // KPI GLOBAL — chips compactos que apuntan a cada sección
 // ════════════════════════════════════════════════════════════════════════════
 function GlobalInvKpi({ stock, prestamos, onTabChange }) {
-  const eme   = stock.filter((s) => !s.categoria || s.categoria === "emergencia");
-  const venta = stock.filter((s) => s.categoria === "venta");
-  const pre   = (prestamos ?? []).filter((p) => p.estado === "entregado");
-
-  const critEme   = eme.filter((s)   => s.max > 0 && (s.cantidad / s.max) < 0.20).length;
-  const bajosEme  = eme.filter((s)   => { const p = s.max > 0 ? s.cantidad / s.max : 0; return p >= 0.20 && p < 0.45; }).length;
-  const critVenta = venta.filter((s) => s.max > 0 && (s.cantidad / s.max) < 0.20).length;
-  const bajosVenta= venta.filter((s) => { const p = s.max > 0 ? s.cantidad / s.max : 0; return p >= 0.20 && p < 0.45; }).length;
-  const preActivos= pre.length;
+  const venta      = stock.filter((s) => s.categoria === "venta");
+  const preActivos = (prestamos ?? []).filter((p) => p.estado === "entregado").length;
+  const critVenta  = venta.filter((s) => s.max > 0 && (s.cantidad / s.max) < 0.20).length;
+  const bajosVenta = venta.filter((s) => { const p = s.max > 0 ? s.cantidad / s.max : 0; return p >= 0.20 && p < 0.45; }).length;
 
   return (
     <div className="inv-global-kpi">
       <span className="inv-global-kpi-title">Resumen general</span>
       <div className="inv-global-chips">
 
-        {/* Emergencia */}
-        <div className="inv-global-group" onClick={() => onTabChange("emergencia")} role="button" tabIndex={0}>
-          <span className="inv-global-group-label"><IcoTool s={11} /> Emergencia</span>
+        {/* Equipamiento */}
+        <div className="inv-global-group" onClick={() => onTabChange("prestamos")} role="button" tabIndex={0}>
+          <span className="inv-global-group-label"><IcoUsers s={11} /> Equipamiento</span>
           <div className="inv-global-group-chips">
             <span
               className="inv-global-chip"
-              style={{ color: critEme > 0 ? "var(--status-error-text)" : "var(--text-muted)", background: critEme > 0 ? "var(--status-error-bg)" : "transparent" }}
+              style={{ color: preActivos > 0 ? "var(--status-warn-text)" : "var(--text-muted)", background: preActivos > 0 ? "var(--status-warn-bg)" : "transparent" }}
             >
-              <IcoWarning s={11} /> {critEme} críticos
-            </span>
-            <span
-              className="inv-global-chip"
-              style={{ color: bajosEme > 0 ? "var(--status-warn-text)" : "var(--text-muted)", background: bajosEme > 0 ? "var(--status-warn-bg)" : "transparent" }}
-            >
-              <IcoBell s={11} /> {bajosEme} bajos
+              <IcoUsers s={11} /> {preActivos} en préstamo
             </span>
           </div>
         </div>
@@ -209,72 +190,65 @@ function GlobalInvKpi({ stock, prestamos, onTabChange }) {
           </div>
         </div>
 
-        <div className="inv-global-sep" />
-
-        {/* Préstamos */}
-        <div className="inv-global-group" onClick={() => onTabChange("prestamos")} role="button" tabIndex={0}>
-          <span className="inv-global-group-label"><IcoUsers s={11} /> Préstamos</span>
-          <div className="inv-global-group-chips">
-            <span
-              className="inv-global-chip"
-              style={{ color: preActivos > 0 ? "var(--status-warn-text)" : "var(--text-muted)", background: preActivos > 0 ? "var(--status-warn-bg)" : "transparent" }}
-            >
-              <IcoUsers s={11} /> {preActivos} activos
-            </span>
-          </div>
-        </div>
-
       </div>
     </div>
   );
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// TAB 1: PRÉSTAMOS
+// TAB 1: EQUIPAMIENTO DEPORTIVO (préstamos)
 // ════════════════════════════════════════════════════════════════════════════
+const EQ_EMPTY      = { nombre: "", cantidad: 0, max: 1, unidad: "u" };
 const PRESTAMO_EMPTY = { nombre: "", cantidad: 1, unidad: "u", clienteId: "", nota: "", stockItemId: "" };
 
 function SeccionPrestamos() {
-  const { prestamos, clientes, stock, addPrestamo, updatePrestamo, deletePrestamo, updateStock } = useStore();
-  const [modal, setModal]   = useState(null);
-  const [form, setForm]     = useState(PRESTAMO_EMPTY);
-  const [errors, setErrors] = useState({});
-  const [filter, setFilter] = useState("todos");
+  const { prestamos, clientes, stock, addPrestamo, updatePrestamo, deletePrestamo, updateStock, addStock, deleteStock } = useStore();
+
+  // Catálogo de equipamiento = ítems de stock con categoria "prestamo"
+  const equipo = useMemo(() => stock.filter((s) => s.categoria === "prestamo"), [stock]);
+
+  const [modal,       setModal]   = useState(null);
+  const [form,        setForm]    = useState(PRESTAMO_EMPTY);
+  const [eqForm,      setEqForm]  = useState(EQ_EMPTY);
+  const [errors,      setErrors]  = useState({});
+  const [filterLog,   setFilterLog] = useState("entregado");
 
   const hoy = new Date().toISOString().split("T")[0];
 
-  const filtered = useMemo(() => {
-    if (filter === "todos") return prestamos;
-    return prestamos.filter((p) => p.estado === filter);
-  }, [prestamos, filter]);
+  const logsFiltered = useMemo(() => {
+    if (filterLog === "todos") return prestamos;
+    return prestamos.filter((p) => p.estado === filterLog);
+  }, [prestamos, filterLog]);
 
-  const stats = useMemo(() => ({
-    entregados: prestamos.filter((p) => p.estado === "entregado").length,
-    devueltos:  prestamos.filter((p) => p.estado === "devuelto").length,
-    perdidos:   prestamos.filter((p) => p.estado === "perdido").length,
-  }), [prestamos]);
+  const totalDisponible = equipo.reduce((s, e) => s + e.cantidad, 0);
+  const totalEnUso      = equipo.reduce((s, e) => s + Math.max(0, e.max - e.cantidad), 0);
+  const perdidos        = prestamos.filter((p) => p.estado === "perdido").length;
 
-  const setField = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  const setField   = (k, v) => setForm((f)   => ({ ...f, [k]: v }));
+  const setEqField = (k, v) => setEqForm((f) => ({ ...f, [k]: v }));
 
-  const validate = () => {
+  // Abrir modal de préstamo pre-cargado con el ítem seleccionado
+  const openPrestar = (item) => {
+    setForm({ ...PRESTAMO_EMPTY, stockItemId: item.id, nombre: item.nombre, unidad: item.unidad });
+    setErrors({});
+    setModal("prestar");
+  };
+
+  const validatePrestamo = () => {
     const e = {};
-    if (!form.nombre.trim()) e.nombre = "Requerido";
-    if (form.cantidad < 1)   e.cantidad = "Mínimo 1";
-    // Verificar stock disponible si se vinculó un ítem de inventario
+    if (form.cantidad < 1) e.cantidad = "Mínimo 1";
     if (form.stockItemId) {
       const item = stock.find((s) => s.id === form.stockItemId);
-      if (item && form.cantidad > item.cantidad) {
-        e.cantidad = `Stock insuficiente — solo hay ${item.cantidad} ${item.unidad} disponibles`;
-      }
+      if (item && form.cantidad > item.cantidad)
+        e.cantidad = `Disponibles: ${item.cantidad} ${item.unidad}`;
     }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
-  const handleSave = async () => {
-    if (!validate()) return;
+  const handleSavePrestamo = async () => {
+    if (!validatePrestamo()) return;
     await addPrestamo({ ...form, estado: "entregado", fechaEntrega: hoy, fechaDevolucion: null });
-    // Descontar del inventario si se vinculó un ítem (BUG-003)
     if (form.stockItemId) {
       const item = stock.find((s) => s.id === form.stockItemId);
       if (item) await updateStock(item.id, { cantidad: item.cantidad - Number(form.cantidad) });
@@ -284,7 +258,6 @@ function SeccionPrestamos() {
 
   const handleDevolver = async (p) => {
     await updatePrestamo(p.id, { estado: "devuelto", fechaDevolucion: hoy });
-    // Restaurar stock al devolver (BUG-003)
     if (p.stockItemId) {
       const item = stock.find((s) => s.id === p.stockItemId);
       if (item) await updateStock(item.id, { cantidad: item.cantidad + Number(p.cantidad) });
@@ -292,46 +265,112 @@ function SeccionPrestamos() {
   };
 
   const handlePerder = (p) => updatePrestamo(p.id, { estado: "perdido" });
-  // Ítems perdidos no restauran stock — se perdieron físicamente
+
+  const validateEq = () => {
+    const e = {};
+    if (!eqForm.nombre.trim())        e.nombre = "El nombre es obligatorio";
+    if (!eqForm.max || eqForm.max <= 0) e.max  = "Debe ser mayor a 0";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleSaveEq = () => {
+    if (!validateEq()) return;
+    if (modal?.mode === "eq-add") addStock({ ...eqForm, categoria: "prestamo" });
+    else updateStock(modal.data.id, { ...eqForm });
+    setModal(null);
+  };
 
   return (
     <div className="inv-section">
-      {/* KPIs de sección */}
+      {/* KPIs */}
       <div className="inv-kpis-row">
-        <KpiChip label="En préstamo" val={stats.entregados} color="var(--status-warn-text)"  bg="var(--status-warn-bg)"  Icon={IcoUsers}  />
-        <KpiChip label="Devueltos"   val={stats.devueltos}  color="var(--status-ok-text)"    bg="var(--status-ok-bg)"    Icon={IcoReturn} />
-        <KpiChip label="Perdidos"    val={stats.perdidos}   color="var(--status-error-text)" bg="var(--status-error-bg)" Icon={IcoX}      />
+        <KpiChip label="Disponibles"  val={totalDisponible} color="var(--status-ok-text)"    bg="var(--status-ok-bg)"    Icon={IcoCheck}  />
+        <KpiChip label="En préstamo"  val={totalEnUso}      color="var(--status-warn-text)"  bg="var(--status-warn-bg)"  Icon={IcoUsers}  />
+        <KpiChip label="Perdidos"     val={perdidos}        color="var(--status-error-text)" bg="var(--status-error-bg)" Icon={IcoX}      />
+        <KpiChip label="Tipos"        val={equipo.length}   color="var(--text-secondary)"    bg="rgba(255,255,255,0.04)" Icon={IcoBox}    />
       </div>
 
-      {/* Filtros */}
-      <div className="inv-filter-row">
-        {["todos", "entregado", "devuelto", "perdido"].map((f) => (
-          <button
-            key={f}
-            className={`pill ${filter === f ? "pill-active" : ""}`}
-            onClick={() => setFilter(f)}
-          >
-            {f === "todos" ? "Todos" : ESTADO_CFG[f].label}
-          </button>
-        ))}
-        <button
-          className="btn btn-primary"
-          style={{ marginLeft: "auto" }}
-          onClick={() => { setForm(PRESTAMO_EMPTY); setErrors({}); setModal("add"); }}
-        >
-          + Nuevo préstamo
-        </button>
-      </div>
-
-      {/* Lista */}
+      {/* Catálogo de equipamiento */}
       <div className="card">
+        <div className="card-header">
+          <div>
+            <div className="card-title">Equipamiento deportivo</div>
+            <div className="card-sub">{equipo.length} tipos · {totalEnUso} en préstamo · {totalDisponible} disponibles</div>
+          </div>
+          <button
+            className="btn btn-primary"
+            onClick={() => { setEqForm(EQ_EMPTY); setErrors({}); setModal({ mode: "eq-add" }); }}
+          >
+            + Agregar equipo
+          </button>
+        </div>
+        <div className="stock-list">
+          {equipo.length === 0 ? (
+            <div className="inv-empty">No hay equipamiento registrado. Agregá pelotas, raquetas, etc.</div>
+          ) : (
+            equipo.map((s) => {
+              const pct   = s.max > 0 ? Math.round((s.cantidad / s.max) * 100) : 0;
+              const level = getStockLevel(pct);
+              const { Icon } = level;
+              return (
+                <div key={s.id} className="stock-row">
+                  <span className="stock-name">{s.nombre}</span>
+                  <div className="stock-bar-bg">
+                    <div className="stock-bar" style={{ "--bar-w": `${pct}%`, "--bar-c": level.color }} />
+                  </div>
+                  <span className="stock-qty">{s.cantidad}/{s.max} {s.unidad}</span>
+                  <span className="stock-badge" style={{ "--badge-color": level.color, "--badge-bg": level.bg }}>
+                    <Icon s={11} /> {level.label}
+                  </span>
+                  <div className="inv-actions">
+                    <button
+                      className="btn btn-sm btn-ok"
+                      onClick={() => openPrestar(s)}
+                      disabled={s.cantidad <= 0}
+                    >
+                      Prestar
+                    </button>
+                    <button className="btn btn-sm" onClick={() => { setEqForm({ ...s }); setErrors({}); setModal({ mode: "eq-edit", data: s }); }}>
+                      Editar
+                    </button>
+                    <button className="btn btn-sm btn-icon-danger" onClick={() => setModal({ mode: "eq-delete", data: s })}>
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      {/* Historial de préstamos */}
+      <div className="card" style={{ marginTop: 16 }}>
+        <div className="card-header">
+          <div>
+            <div className="card-title">Historial de préstamos</div>
+            <div className="card-sub">{prestamos.filter((p) => p.estado === "entregado").length} activos</div>
+          </div>
+          <div className="inv-filter-row" style={{ marginBottom: 0 }}>
+            {["entregado", "devuelto", "perdido", "todos"].map((f) => (
+              <button
+                key={f}
+                className={`pill ${filterLog === f ? "pill-active" : ""}`}
+                onClick={() => setFilterLog(f)}
+              >
+                {f === "todos" ? "Todos" : ESTADO_CFG[f].label}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="prestamos-list">
-          {filtered.length === 0 ? (
+          {logsFiltered.length === 0 ? (
             <div className="inv-empty">
-              No hay préstamos {filter !== "todos" ? `con estado "${ESTADO_CFG[filter]?.label}"` : "registrados"}
+              Sin préstamos {filterLog !== "todos" ? `con estado "${ESTADO_CFG[filterLog]?.label}"` : "registrados"}
             </div>
           ) : (
-            filtered.map((p) => {
+            logsFiltered.map((p) => {
               const cliente = clientes.find((c) => c.id === p.clienteId);
               const ec = ESTADO_CFG[p.estado ?? "entregado"];
               return (
@@ -362,36 +401,15 @@ function SeccionPrestamos() {
         </div>
       </div>
 
-      {/* Modal nuevo préstamo */}
-      {modal === "add" && (
-        <Modal title="Nuevo préstamo" onClose={() => setModal(null)} size="sm">
+      {/* Modal: Registrar préstamo */}
+      {modal === "prestar" && (
+        <Modal title="Registrar préstamo" onClose={() => setModal(null)} size="sm">
           <div className="form-grid">
             <div className="form-group form-full">
-              <label className="form-label">Descontar de inventario (opcional)</label>
-              <select
-                className="form-input"
-                value={form.stockItemId}
-                onChange={(e) => {
-                  const item = stock.find((s) => s.id === e.target.value);
-                  setField("stockItemId", e.target.value);
-                  if (item) { setField("nombre", item.nombre); setField("unidad", item.unidad); }
-                }}
-              >
-                <option value="">— Solo registrar, sin descontar inventario —</option>
-                {stock.filter((s) => s.cantidad > 0).map((s) => (
-                  <option key={s.id} value={s.id}>{s.nombre} ({s.cantidad} {s.unidad} disponibles)</option>
-                ))}
-              </select>
-            </div>
-            <div className="form-group form-full">
-              <label className="form-label">Artículo prestado *</label>
-              <input
-                className={`form-input ${errors.nombre ? "input-error" : ""}`}
-                value={form.nombre}
-                onChange={(e) => setField("nombre", e.target.value)}
-                placeholder="Ej: Pelota de básquet"
-              />
-              {errors.nombre && <span className="form-error">{errors.nombre}</span>}
+              <label className="form-label">Artículo</label>
+              <div className="client-readonly-box">
+                <span className="client-readonly-name">{form.nombre}</span>
+              </div>
             </div>
             <div className="form-group">
               <label className="form-label">Cantidad *</label>
@@ -403,16 +421,10 @@ function SeccionPrestamos() {
               />
               {errors.cantidad && <span className="form-error">{errors.cantidad}</span>}
             </div>
-            <div className="form-group">
-              <label className="form-label">Unidad</label>
-              <select className="form-input" value={form.unidad} onChange={(e) => setField("unidad", e.target.value)}>
-                {UNIDADES.map((u) => <option key={u}>{u}</option>)}
-              </select>
-            </div>
             <div className="form-group form-full">
               <label className="form-label">Cliente</label>
               <select className="form-input" value={form.clienteId} onChange={(e) => setField("clienteId", e.target.value)}>
-                <option value="">— Seleccionar cliente —</option>
+                <option value="">— Sin cliente —</option>
                 {clientes.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select>
             </div>
@@ -428,11 +440,59 @@ function SeccionPrestamos() {
           </div>
           <div className="modal-actions">
             <button className="btn" onClick={() => setModal(null)}>Cancelar</button>
-            <button className="btn btn-primary" onClick={handleSave}>Registrar préstamo</button>
+            <button className="btn btn-primary" onClick={handleSavePrestamo}>Registrar préstamo</button>
           </div>
         </Modal>
       )}
 
+      {/* Modal: Agregar / editar equipo */}
+      {(modal?.mode === "eq-add" || modal?.mode === "eq-edit") && (
+        <Modal
+          title={modal.mode === "eq-add" ? "Agregar equipamiento" : `Editar — ${modal.data.nombre}`}
+          onClose={() => setModal(null)} size="sm"
+        >
+          <div className="form-grid">
+            <div className="form-group form-full">
+              <label className="form-label">Nombre *</label>
+              <input
+                className={`form-input ${errors.nombre ? "input-error" : ""}`}
+                value={eqForm.nombre}
+                onChange={(e) => setEqField("nombre", e.target.value)}
+                placeholder="Ej: Pelota de pádel"
+              />
+              {errors.nombre && <span className="form-error">{errors.nombre}</span>}
+            </div>
+            <div className="form-group">
+              <label className="form-label">Disponibles</label>
+              <input className="form-input" type="number" min="0" value={eqForm.cantidad}
+                onChange={(e) => setEqField("cantidad", parseInt(e.target.value) || 0)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Total (máx) *</label>
+              <input
+                className={`form-input ${errors.max ? "input-error" : ""}`}
+                type="number" min="1" value={eqForm.max}
+                onChange={(e) => setEqField("max", parseInt(e.target.value) || 1)}
+              />
+              {errors.max && <span className="form-error">{errors.max}</span>}
+            </div>
+            <div className="form-group">
+              <label className="form-label">Unidad</label>
+              <select className="form-input" value={eqForm.unidad} onChange={(e) => setEqField("unidad", e.target.value)}>
+                {UNIDADES.map((u) => <option key={u}>{u}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="modal-actions">
+            <button className="btn" onClick={() => setModal(null)}>Cancelar</button>
+            <button className="btn btn-primary" onClick={handleSaveEq}>
+              {modal.mode === "eq-add" ? "Agregar" : "Actualizar"}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal: Eliminar préstamo */}
       {modal?.mode === "delete" && (
         <Modal title="Eliminar préstamo" onClose={() => setModal(null)} size="sm">
           <p className="modal-confirm-text">
@@ -444,203 +504,13 @@ function SeccionPrestamos() {
           </div>
         </Modal>
       )}
-    </div>
-  );
-}
 
-// ════════════════════════════════════════════════════════════════════════════
-// TAB 2: EMERGENCIA Y MANTENIMIENTO
-// ════════════════════════════════════════════════════════════════════════════
-const EME_EMPTY     = { nombre: "", cantidad: 0, max: 100, unidad: "u" };
-const CONSUMO_EMPTY = { cantidad: 1, motivo: "", responsable: "" };
-
-function SeccionEmergencia() {
-  const { stock, addStock, updateStock, deleteStock, addMovimientoStock } = useStore();
-  const items = useMemo(() => stock.filter((s) => !s.categoria || s.categoria === "emergencia"), [stock]);
-
-  const [modal, setModal]       = useState(null);
-  const [form, setForm]         = useState(EME_EMPTY);
-  const [consumo, setConsumo]   = useState(CONSUMO_EMPTY);
-  const [consumoError, setConsumoError] = useState("");
-  const [errors, setErrors]     = useState({});
-
-  const criticos = items.filter((s) => s.max > 0 && (s.cantidad / s.max) < 0.20);
-  const bajos    = items.filter((s) => { const p = s.max > 0 ? s.cantidad / s.max : 0; return p >= 0.20 && p < 0.45; });
-  const normales = items.length - criticos.length - bajos.length;
-
-  const setField = (k, v) => setForm((f) => ({ ...f, [k]: v }));
-
-  const validate = () => {
-    const e = {};
-    if (!form.nombre.trim())       e.nombre = "El nombre es obligatorio";
-    if (!form.max || form.max <= 0) e.max    = "Debe ser mayor a 0";
-    setErrors(e);
-    return Object.keys(e).length === 0;
-  };
-
-  const handleSave = () => {
-    if (!validate()) return;
-    if (modal?.mode === "add") addStock({ ...form, categoria: "emergencia" });
-    else updateStock(modal.data.id, form);
-    setModal(null);
-  };
-
-  const handleConsumo = async () => {
-    setConsumoError("");
-    const item = modal.data;
-    // BUG-008: validar que no supere el stock disponible
-    if ((consumo.cantidad || 0) > (item.cantidad || 0)) {
-      setConsumoError(`No hay suficiente stock — máximo ${item.cantidad} ${item.unidad}`);
-      return;
-    }
-    const nuevaCantidad = Math.max(0, (item.cantidad || 0) - (consumo.cantidad || 0));
-    const mov = {
-      fecha:       new Date().toISOString().split("T")[0],
-      cantidad:    consumo.cantidad,
-      motivo:      consumo.motivo,
-      responsable: consumo.responsable,
-    };
-    // BUG-007: usar addMovimientoStock del store para mantener el historial correctamente
-    await addMovimientoStock(item.id, nuevaCantidad, mov);
-    setModal(null);
-  };
-
-  return (
-    <div className="inv-section">
-      {/* KPIs de sección */}
-      <div className="inv-kpis-row">
-        <KpiChip label="Críticos" val={criticos.length} color="var(--status-error-text)" bg="var(--status-error-bg)" Icon={IcoWarning} />
-        <KpiChip label="Bajos"    val={bajos.length}    color="var(--status-warn-text)"  bg="var(--status-warn-bg)"  Icon={IcoBell}    />
-        <KpiChip label="Normales" val={normales}        color="var(--status-ok-text)"    bg="var(--status-ok-bg)"    Icon={IcoCheck}   />
-        <KpiChip label="Total"    val={items.length}    color="var(--text-secondary)"    bg="rgba(255,255,255,0.04)" Icon={IcoBox}     />
-      </div>
-
-      {/* Alertas inline */}
-      {criticos.length > 0 && (
-        <div className="inv-alert-danger">
-          <IcoWarning s={13} /> <strong>{criticos.length} en stock crítico:</strong> {criticos.map((c) => c.nombre).join(", ")}
-        </div>
-      )}
-      {bajos.length > 0 && (
-        <div className="inv-alert-warning">
-          <IcoBell s={13} /> <strong>{bajos.length} con stock bajo:</strong> {bajos.map((b) => b.nombre).join(", ")}
-        </div>
-      )}
-
-      {/* Charts KPI */}
-      <KpisInventario items={items} title="Análisis — Emergencia y Mant." />
-
-      {/* Lista */}
-      <div className="card">
-        <div className="card-header">
-          <div>
-            <div className="card-title">Materiales de emergencia y mantenimiento</div>
-            <div className="card-sub">{items.length} productos · {criticos.length + bajos.length} requieren reposición</div>
-          </div>
-          <button className="btn btn-primary" onClick={() => { setForm(EME_EMPTY); setErrors({}); setModal({ mode: "add" }); }}>
-            + Agregar
-          </button>
-        </div>
-        <div className="stock-list">
-          {items.length === 0 ? (
-            <div className="inv-empty">No hay materiales registrados</div>
-          ) : (
-            items.map((s) => (
-              <StockRow
-                key={s.id}
-                item={s}
-                onEdit={(item) => { setForm({ ...item }); setErrors({}); setModal({ mode: "edit", data: item }); }}
-                onDelete={(item) => setModal({ mode: "delete", data: item })}
-                onConsumo={(item) => { setConsumo(CONSUMO_EMPTY); setModal({ mode: "consumo", data: item }); }}
-              />
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* Modal alta/edición */}
-      {(modal?.mode === "add" || modal?.mode === "edit") && (
-        <Modal
-          title={modal.mode === "add" ? "Nuevo material" : `Editar — ${modal.data.nombre}`}
-          onClose={() => setModal(null)} size="sm"
-        >
-          <div className="form-grid">
-            <div className="form-group form-full">
-              <label className="form-label">Nombre *</label>
-              <input
-                className={`form-input ${errors.nombre ? "input-error" : ""}`}
-                value={form.nombre}
-                onChange={(e) => setField("nombre", e.target.value)}
-                placeholder="Ej: Leña, Cinta de embalaje..."
-              />
-              {errors.nombre && <span className="form-error">{errors.nombre}</span>}
-            </div>
-            <div className="form-group">
-              <label className="form-label">Cantidad actual</label>
-              <input className="form-input" type="number" min="0" value={form.cantidad}
-                onChange={(e) => setField("cantidad", parseInt(e.target.value) || 0)} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Máximo *</label>
-              <input
-                className={`form-input ${errors.max ? "input-error" : ""}`}
-                type="number" min="1" value={form.max}
-                onChange={(e) => setField("max", parseInt(e.target.value) || 1)}
-              />
-              {errors.max && <span className="form-error">{errors.max}</span>}
-            </div>
-            <div className="form-group">
-              <label className="form-label">Unidad</label>
-              <select className="form-input" value={form.unidad} onChange={(e) => setField("unidad", e.target.value)}>
-                {UNIDADES.map((u) => <option key={u}>{u}</option>)}
-              </select>
-            </div>
-          </div>
-          <div className="modal-actions">
-            <button className="btn" onClick={() => setModal(null)}>Cancelar</button>
-            <button className="btn btn-primary" onClick={handleSave}>{modal.mode === "add" ? "Guardar" : "Actualizar"}</button>
-          </div>
-        </Modal>
-      )}
-
-      {/* Modal consumo */}
-      {modal?.mode === "consumo" && (
-        <Modal title={`Consumo — ${modal.data.nombre}`} onClose={() => { setModal(null); setConsumoError(""); }} size="sm">
-          <div className="form-grid">
-            <div className="form-group">
-              <label className="form-label">Cantidad consumida *</label>
-              <input className="form-input" type="number" min="1" max={modal.data.cantidad}
-                value={consumo.cantidad}
-                onChange={(e) => { setConsumoError(""); setConsumo((c) => ({ ...c, cantidad: parseInt(e.target.value) || 1 })); }} />
-              <span className="form-hint">Stock actual: {modal.data.cantidad} {modal.data.unidad}</span>
-              {consumoError && <span className="form-error">{consumoError}</span>}
-            </div>
-            <div className="form-group">
-              <label className="form-label">Responsable</label>
-              <input className="form-input" value={consumo.responsable}
-                onChange={(e) => setConsumo((c) => ({ ...c, responsable: e.target.value }))}
-                placeholder="Nombre del responsable" />
-            </div>
-            <div className="form-group form-full">
-              <label className="form-label">Motivo *</label>
-              <input className="form-input" value={consumo.motivo}
-                onChange={(e) => setConsumo((c) => ({ ...c, motivo: e.target.value }))}
-                placeholder="Ej: Mantenimiento cancha 3" />
-            </div>
-          </div>
-          <div className="modal-actions">
-            <button className="btn" onClick={() => setModal(null)}>Cancelar</button>
-            <button className="btn btn-primary" onClick={handleConsumo} disabled={!consumo.motivo.trim()}>
-              Registrar consumo
-            </button>
-          </div>
-        </Modal>
-      )}
-
-      {/* Modal eliminar */}
-      {modal?.mode === "delete" && (
-        <Modal title="Eliminar material" onClose={() => setModal(null)} size="sm">
-          <p className="modal-confirm-text">¿Eliminar <strong>{modal.data.nombre}</strong>? Esta acción no se puede deshacer.</p>
+      {/* Modal: Eliminar equipo del catálogo */}
+      {modal?.mode === "eq-delete" && (
+        <Modal title="Eliminar equipamiento" onClose={() => setModal(null)} size="sm">
+          <p className="modal-confirm-text">
+            ¿Eliminar <strong>{modal.data.nombre}</strong> del catálogo? Esta acción no se puede deshacer.
+          </p>
           <div className="modal-actions">
             <button className="btn" onClick={() => setModal(null)}>Cancelar</button>
             <button className="btn btn-delete" onClick={() => { deleteStock(modal.data.id); setModal(null); }}>Eliminar</button>
@@ -652,7 +522,7 @@ function SeccionEmergencia() {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// TAB 3: VENTA
+// TAB 2: VENTA
 // ════════════════════════════════════════════════════════════════════════════
 const VENTA_EMPTY = { nombre: "", cantidad: 0, max: 100, unidad: "u", precioUnitario: 0, precioCosto: 0 };
 
@@ -755,17 +625,20 @@ function SeccionVenta() {
       {/* Alertas inline */}
       {criticos.length > 0 && (
         <div className="inv-alert-danger">
-          <IcoWarning s={13} /> <strong>{criticos.length} en stock crítico:</strong> {criticos.map((c) => c.nombre).join(", ")}
+          <IcoWarning s={13} />
+          <strong>{criticos.length} en stock crítico:</strong>{" "}
+          {criticos.slice(0, 5).map((c) => c.nombre).join(", ")}
+          {criticos.length > 5 && ` y ${criticos.length - 5} más`}
         </div>
       )}
       {bajos.length > 0 && (
         <div className="inv-alert-warning">
-          <IcoBell s={13} /> <strong>{bajos.length} con stock bajo:</strong> {bajos.map((b) => b.nombre).join(", ")}
+          <IcoBell s={13} />
+          <strong>{bajos.length} con stock bajo:</strong>{" "}
+          {bajos.slice(0, 5).map((b) => b.nombre).join(", ")}
+          {bajos.length > 5 && ` y ${bajos.length - 5} más`}
         </div>
       )}
-
-      {/* Charts KPI */}
-      <KpisInventario items={items} title="Análisis — Productos de venta" />
 
       {/* Lista */}
       <div className="card">
@@ -822,6 +695,9 @@ function SeccionVenta() {
           )}
         </div>
       </div>
+
+      {/* Charts KPI — debajo de la lista */}
+      <KpisInventario items={items} title="Análisis — Productos de venta" />
 
       {/* Modal alta/edición */}
       {(modal?.mode === "add" || modal?.mode === "edit") && (
@@ -945,14 +821,12 @@ function SeccionVenta() {
 // ════════════════════════════════════════════════════════════════════════════
 export default function TabInventario() {
   const { stock, prestamos } = useStore();
-  const [tab, setTab] = useState("emergencia");
+  const [tab, setTab] = useState("prestamos");
 
   const tabStats = useMemo(() => {
-    const eme   = stock.filter((s) => !s.categoria || s.categoria === "emergencia");
     const venta = stock.filter((s) => s.categoria === "venta");
     return {
       prePendientes: (prestamos ?? []).filter((p) => p.estado === "entregado").length,
-      critEme:       eme.filter((s)   => s.max > 0 && (s.cantidad / s.max) < 0.20).length,
       critVenta:     venta.filter((s) => s.max > 0 && (s.cantidad / s.max) < 0.20).length,
     };
   }, [stock, prestamos]);
@@ -964,7 +838,7 @@ export default function TabInventario() {
           <div className="page-title">Inventario</div>
           <div className="page-desc">
             {stock.filter((s) => s.categoria === "venta").length} venta ·{" "}
-            {stock.filter((s) => !s.categoria || s.categoria === "emergencia").length} emergencia ·{" "}
+            {stock.filter((s) => s.categoria === "prestamo").length} equipamiento ·{" "}
             {tabStats.prePendientes} préstamos activos
           </div>
         </div>
@@ -982,11 +856,8 @@ export default function TabInventario() {
             onClick={() => setTab(id)}
           >
             <Icon s={14} /> {label}
-            {id === "prestamos"  && tabStats.prePendientes > 0 && (
+            {id === "prestamos" && tabStats.prePendientes > 0 && (
               <span className="inv-tab-badge">{tabStats.prePendientes}</span>
-            )}
-            {id === "emergencia" && tabStats.critEme > 0 && (
-              <span className="inv-tab-badge inv-tab-badge-danger">{tabStats.critEme}</span>
             )}
             {id === "venta" && tabStats.critVenta > 0 && (
               <span className="inv-tab-badge inv-tab-badge-danger">{tabStats.critVenta}</span>
@@ -995,9 +866,8 @@ export default function TabInventario() {
         ))}
       </div>
 
-      {tab === "prestamos"  && <SeccionPrestamos />}
-      {tab === "emergencia" && <SeccionEmergencia />}
-      {tab === "venta"      && <SeccionVenta />}
+      {tab === "prestamos" && <SeccionPrestamos />}
+      {tab === "venta"     && <SeccionVenta />}
     </div>
   );
 }

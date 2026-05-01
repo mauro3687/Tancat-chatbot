@@ -5,7 +5,7 @@ import {
   ResponsiveContainer, ReferenceLine,
 } from "recharts";
 import { useStore } from "../data/store.jsx";
-import KpisReservas from "./KpisReservas.jsx";
+import KpisReservas from "./kpis/KpisReservas.jsx";
 import { DEPORTE_EMOJI } from "../data/canchas.js";
 import "../styles/TabResumen.css";
 

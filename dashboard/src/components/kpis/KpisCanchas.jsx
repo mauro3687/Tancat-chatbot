@@ -1,25 +1,19 @@
-// src/components/KpisCanchas.jsx — KPIs analíticos del módulo Canchas
+// src/components/kpis/KpisCanchas.jsx — KPIs analíticos del módulo Canchas
 import { useMemo } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell,
 } from "recharts";
-import { CANCHAS } from "../data/canchas.js";
-import "../styles/KpisCanchas.css";
+import { CANCHAS } from "../../data/canchas.js";
+import "../../styles/KpisCanchas.css";
 
 const HORAS = Array.from({ length: 14 }, (_, i) => `${String(8 + i).padStart(2, "0")}:00`);
 const DIAS  = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
-// ── Mapa de calor: ocupación por cancha × franja horaria (semana actual) ───
 function HeatmapCanchas({ reservas }) {
-  // matrix[canchaIdx][horaIdx] = count de reservas
   const { matrix, canchaLabels } = useMemo(() => {
     const labels = CANCHAS.map((c) => c.nombre);
     const m = CANCHAS.map(() => Array(HORAS.length).fill(0));
-
-    const now   = new Date();
-    const lunes = new Date(now);
-    lunes.setDate(now.getDate() - ((now.getDay() + 6) % 7));
 
     reservas.forEach((r) => {
       if (!r.fecha || !r.horario || r.estado === "Cancelada") return;
@@ -41,10 +35,8 @@ function HeatmapCanchas({ reservas }) {
       <div className="kpic-sub">Reservas históricas por franja horaria (todas las semanas)</div>
       <div className="heatmap-c-wrap">
         <div className="heatmap-c-grid" style={{ "--cols": HORAS.length + 1 }}>
-          {/* Encabezado horas */}
           <div className="hmc-cell hmc-header" />
           {HORAS.map((h) => <div key={h} className="hmc-cell hmc-header">{h}</div>)}
-          {/* Filas por cancha */}
           {canchaLabels.map((nombre, ci) => (
             <>
               <div key={`lbl-${nombre}`} className="hmc-cell hmc-row-label" title={nombre}>
@@ -77,7 +69,6 @@ function HeatmapCanchas({ reservas }) {
   );
 }
 
-// ── Barras horizontales: canchas con más horas bloqueadas en el mes ─────────
 function BarrasBloqueos({ bloqueos }) {
   const data = useMemo(() => {
     const now = new Date();
@@ -123,7 +114,6 @@ function BarrasBloqueos({ bloqueos }) {
   );
 }
 
-// ── Barras: reservas por cancha (comparación) ───────────────────────────────
 function BarrasReservasPorCancha({ reservas }) {
   const data = useMemo(() => {
     const counts = {};
@@ -159,7 +149,6 @@ function BarrasReservasPorCancha({ reservas }) {
   );
 }
 
-// ── Componente principal ────────────────────────────────────────────────────
 export default function KpisCanchas({ reservas, bloqueos }) {
   return (
     <div className="kpics-section">

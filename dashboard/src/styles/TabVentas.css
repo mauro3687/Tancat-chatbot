@@ -1,2 +1,145 @@
 /* src/styles/TabVentas.css */
-/* (component-specific only — shared patterns live in shared.css) */
+
+/* ── Badge recibo en tabla ─────────────────────────────────────────────────── */
+.badge-recibo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-muted);
+  padding: 2px 8px;
+  border-radius: 8px;
+}
+
+/* ── Fila expandida de detalle recibo ─────────────────────────────────────── */
+.recibo-detail-row td {
+  padding: 0 !important;
+  background: var(--bg-card);
+}
+.recibo-lineas {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 16px 12px;
+  border-left: 3px solid var(--accent);
+}
+.recibo-linea {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.recibo-tipo-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  min-width: 70px;
+  text-align: center;
+}
+.tipo-cancha      { color: var(--status-ok-text);   background: var(--status-ok-bg);   }
+.tipo-consumible  { color: var(--status-warn-text);  background: var(--status-warn-bg);  }
+.recibo-desc  { flex: 1; }
+.recibo-qty   { color: var(--text-muted); font-size: 12px; }
+.recibo-monto { font-weight: 600; color: var(--text-primary); min-width: 80px; text-align: right; }
+.recibo-total-row {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--border);
+  margin-top: 6px;
+  padding-top: 6px;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+/* ── Modal recibo ─────────────────────────────────────────────────────────── */
+.recibo-reservas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+.recibo-reserva-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: border-color 0.15s;
+}
+.recibo-reserva-item.selected {
+  border-color: var(--accent);
+  background: var(--accent-muted);
+}
+.recibo-reserva-item span:first-of-type { flex: 1; }
+
+.recibo-linea-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.recibo-linea-excluida {
+  opacity: 0.4;
+}
+
+.badge-prestamo-venta {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  color: var(--status-warn-text);
+  background: var(--status-warn-bg);
+  white-space: nowrap;
+  cursor: default;
+}
+.recibo-prestamos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+.recibo-prestamo-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  background: var(--bg-input);
+  border-radius: 6px;
+  font-size: 13px;
+}
+.recibo-prestamo-item span:first-child { flex: 1; }
+
+/* ── Total preview en modal recibo ───────────────────────────────────────── */
+.recibo-total-preview {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.recibo-total-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.recibo-total-sum {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  margin-top: 2px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}

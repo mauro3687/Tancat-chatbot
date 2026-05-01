@@ -2,3 +2,13 @@
 /* (component-specific only — shared patterns live in shared.css) */
 
 .tc-name-cell { display: flex; align-items: center; gap: 7px; }
+
+.badge-rec {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 6px;
+  color: var(--status-warn-text);
+  background: var(--status-warn-bg);
+  letter-spacing: 0.03em;
+}

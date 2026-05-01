@@ -1,4 +1,4 @@
-// src/components/KpisInventario.jsx — KPIs visuales del módulo Inventario
+// src/components/kpis/KpisInventario.jsx — KPIs visuales del módulo Inventario
 import { useMemo } from "react";
 
 // ── SVG icons locales ────────────────────────────────────────────────────────
@@ -30,10 +30,9 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, PieChart, Pie, Legend,
 } from "recharts";
-import "../styles/KpisInventario.css";
+import "../../styles/KpisInventario.css";
 
 // ── Gauge SVG: % global de stock del inventario ─────────────────────────────
-// Pregunta: "¿Qué tan lleno está el inventario en su conjunto?"
 function GaugeStockGlobal({ items }) {
   const stock = items;
   const { pct, totalActual, totalMax } = useMemo(() => {
@@ -59,12 +58,10 @@ function GaugeStockGlobal({ items }) {
       <div className="kpi-inv-sub">Unidades actuales vs. capacidad máxima total</div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
         <svg viewBox="0 0 180 100" style={{ width: "100%", maxWidth: 220 }}>
-          {/* Track */}
           <path
             d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
             fill="none" stroke="rgba(0,0,0,0.10)" strokeWidth="14" strokeLinecap="round"
           />
-          {/* Fill */}
           <path
             d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
             fill="none" stroke={color} strokeWidth="14" strokeLinecap="round"
@@ -85,9 +82,6 @@ function GaugeStockGlobal({ items }) {
   );
 }
 
-// ── Pie: proporción de productos por estado ─────────────────────────────────
-// Pregunta: "¿Qué fracción del catálogo está en cada nivel de alerta?"
-// Colores usados en Recharts (SVG fill) → hex del sistema dark
 const PIE_COLORS = { Normal: "#00C49A", Bajo: "#F0A030", Crítico: "#F04D6A" };
 
 function PieEstados({ items }) {
@@ -109,7 +103,7 @@ function PieEstados({ items }) {
 
   const total = data.reduce((s, d) => s + d.value, 0);
 
-  const CustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }) => {
+  const CustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
     if (percent < 0.08) return null;
     const RADIAN = Math.PI / 180;
     const r = innerRadius + (outerRadius - innerRadius) * 0.55;
@@ -157,8 +151,6 @@ function PieEstados({ items }) {
   );
 }
 
-// ── Barras agrupadas: actual vs. máximo por producto ─────────────────────────
-// Pregunta: "¿Cuánto le falta a cada producto para estar al máximo?"
 function BarrasActualVsMax({ items }) {
   const stock = items;
   const data = useMemo(() =>
@@ -166,7 +158,7 @@ function BarrasActualVsMax({ items }) {
       .sort((a, b) => {
         const pA = a.max > 0 ? a.cantidad / a.max : 0;
         const pB = b.max > 0 ? b.cantidad / b.max : 0;
-        return pA - pB; // menor stock primero
+        return pA - pB;
       })
       .slice(0, 10)
       .map((s) => ({
@@ -179,9 +171,9 @@ function BarrasActualVsMax({ items }) {
   [stock]);
 
   const getActualColor = (pct) => {
-    if (pct < 20) return "#F04D6A";   // rojo del sistema
-    if (pct < 45) return "#F0A030";   // ámbar del sistema
-    return "#00C49A";                  // teal accent del sistema
+    if (pct < 20) return "#F04D6A";
+    if (pct < 45) return "#F0A030";
+    return "#00C49A";
   };
 
   return (
@@ -198,23 +190,13 @@ function BarrasActualVsMax({ items }) {
         >
           <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(255,255,255,0.06)" />
           <XAxis type="number" tick={{ fontSize: 11 }} />
-          <YAxis
-            type="category"
-            dataKey="nombre"
-            width={120}
-            tick={{ fontSize: 11 }}
-          />
+          <YAxis type="category" dataKey="nombre" width={120} tick={{ fontSize: 11 }} />
           <Tooltip
-            formatter={(v, name, props) => [
-              `${v} ${props.payload.unidad}`,
-              name,
-            ]}
+            formatter={(v, name, props) => [`${v} ${props.payload.unidad}`, name]}
             contentStyle={{ fontSize: 12 }}
           />
           <Legend wrapperStyle={{ fontSize: 12 }} />
-          {/* Máximo va primero (fondo) */}
           <Bar dataKey="Máximo" fill="rgba(255,255,255,0.07)" radius={[0, 4, 4, 0]} />
-          {/* Actual va encima con color semántico */}
           <Bar dataKey="Actual" radius={[0, 4, 4, 0]}>
             {data.map((entry, i) => (
               <Cell key={i} fill={getActualColor(entry.pct)} />
@@ -226,7 +208,6 @@ function BarrasActualVsMax({ items }) {
   );
 }
 
-// ── Lista de productos que requieren atención ───────────────────────────────
 function ListaAtencion({ items }) {
   const stock = items;
   const urgentes = useMemo(() =>
@@ -262,7 +243,6 @@ function ListaAtencion({ items }) {
   );
 }
 
-// ── Stats resumen ────────────────────────────────────────────────────────────
 function ResumenInventario({ items }) {
   const stock    = items;
   const criticos = stock.filter((s) => s.max > 0 && (s.cantidad / s.max) < 0.20).length;
@@ -297,40 +277,23 @@ function ResumenInventario({ items }) {
   );
 }
 
-// ── Componente principal ────────────────────────────────────────────────────
-export default function KpisInventario({ stock, items, title = "Análisis de inventario", prestamos }) {
+export default function KpisInventario({ stock, items, title = "Análisis de inventario" }) {
   const data = items ?? stock ?? [];
   if (!data || data.length === 0) return null;
-
-  // Stats de categorías (solo en modo global cuando llega `prestamos`)
-  const showGlobal = prestamos !== undefined;
-  const cntEme   = showGlobal ? data.filter((s) => !s.categoria || s.categoria === "emergencia").length : null;
-  const cntVenta = showGlobal ? data.filter((s) => s.categoria === "venta").length : null;
-  const cntPre   = showGlobal ? (prestamos ?? []).filter((p) => p.estado === "entregado").length : null;
 
   return (
     <div className="kpis-inv-section">
       <div className="kpis-inv-header">
         <div className="kpis-inv-title">{title}</div>
-        {showGlobal && (
-          <div className="kpis-inv-cats">
-            <span className="kpis-inv-cat-chip">🔧 {cntEme} emergencia</span>
-            <span className="kpis-inv-cat-chip">🛒 {cntVenta} venta</span>
-            <span className="kpis-inv-cat-chip" style={{ color: "var(--status-warn-text)" }}>🤝 {cntPre} préstamos activos</span>
-          </div>
-        )}
       </div>
 
-      {/* Fila 1: gauge global + pie de estados */}
       <div className="kpis-inv-row-2">
         <GaugeStockGlobal items={data} />
         <PieEstados       items={data} />
       </div>
 
-      {/* Fila 2: barras actual vs. máximo (full width) */}
       <BarrasActualVsMax items={data} />
 
-      {/* Fila 3: resumen stats + lista de atención */}
       <div className="kpis-inv-row-2">
         <ResumenInventario items={data} />
         <ListaAtencion     items={data} />

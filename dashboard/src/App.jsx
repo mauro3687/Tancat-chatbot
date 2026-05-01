@@ -13,7 +13,6 @@ import TabReportes from "./components/TabReportes";
 import TabCanchas from "./components/TabCanchas";
 import TabConfiguracion from "./components/TabConfiguracion";
 import TabIA from "./components/TabIA";
-import TabWhatsApp from "./components/TabWhatsApp";
 import "./App.css";
 import "./styles/shared.css";
 
@@ -43,7 +42,6 @@ function AppInner() {
     inventario:    <TabInventario />,
     ia:            <TabIA />,
     reportes:      <TabReportes />,
-    whatsapp:      <TabWhatsApp />,
     configuracion: <TabConfiguracion />,
   };
 

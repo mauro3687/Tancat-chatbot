@@ -201,6 +201,10 @@ export default function TabReservas() {
   const openEdit   = (r) => {
     const { cliente: _c, email: _e, telefono: _t, ...rLimpio } = r;
     const editForm = { ...EMPTY, ...rLimpio };
+    // Si el clienteId no existe en el sistema, lo limpiamos para forzar reasignación
+    if (editForm.clienteId && !clientes.find((c) => c.id === editForm.clienteId)) {
+      editForm.clienteId = "";
+    }
     if (r.horario) {
       const parts = r.horario.split("—").map((s) => s.trim());
       if (parts.length === 2) {
@@ -436,15 +440,15 @@ export default function TabReservas() {
             {/* Cliente */}
             <div className="form-group form-full">
               <label className="form-label">Cliente {modal.mode === "add" ? "*" : ""}</label>
-              {modal.mode === "edit" ? (
+              {modal.mode === "edit" && clienteSeleccionado ? (
                 <div className="client-readonly-box">
                   <span className="client-readonly-name">
-                    {clienteSeleccionado?.nombre || clienteNombre(modal.data)}
-                    {clienteSeleccionado?.origen === "whatsapp" && <span className="badge-wa">WA</span>}
+                    {clienteSeleccionado.nombre}
+                    {clienteSeleccionado.origen === "whatsapp" && <span className="badge-wa">WA</span>}
                   </span>
-                  {clienteSeleccionado?.telefono && <span>📞 {clienteSeleccionado.telefono}</span>}
-                  {clienteSeleccionado?.email    && <span>✉ {clienteSeleccionado.email}</span>}
-                  {clienteSeleccionado?.ciudad   && <span>📍 {clienteSeleccionado.ciudad}</span>}
+                  {clienteSeleccionado.telefono && <span>📞 {clienteSeleccionado.telefono}</span>}
+                  {clienteSeleccionado.email    && <span>✉ {clienteSeleccionado.email}</span>}
+                  {clienteSeleccionado.ciudad   && <span>📍 {clienteSeleccionado.ciudad}</span>}
                 </div>
               ) : (
                 <>

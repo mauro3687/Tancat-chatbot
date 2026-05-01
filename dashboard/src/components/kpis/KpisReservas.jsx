@@ -1,17 +1,14 @@
-// src/components/KpisReservas.jsx — KPIs visuales para el módulo de Reservas
-// Según las pautas del profe: heatmap ocupación + área apilada + KPI numérico.
-// Histograma de duración y treemap van en REPORTES, no aquí.
+// src/components/kpis/KpisReservas.jsx — KPIs visuales para el módulo de Reservas
 import { useMemo, useState } from "react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from "recharts";
-import "../styles/KpisReservas.css";
+import "../../styles/KpisReservas.css";
 
 const HORAS        = Array.from({ length: 14 }, (_, i) => `${String(8 + i).padStart(2, "0")}:00`);
 const DIAS         = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 const PERIODO_OPTS = ["Semana", "Mes", "Todo"];
 
-// ── Heatmap de ocupación ────────────────────────────────────────────────────
 function HeatmapOcupacion({ reservas }) {
   const matrix = useMemo(() => {
     const m = Array.from({ length: 7 }, () => Array(14).fill(0));
@@ -67,7 +64,6 @@ function HeatmapOcupacion({ reservas }) {
   );
 }
 
-// ── Área apilada: evolución por tipo de cancha ──────────────────────────────
 function AreaApilada({ reservas }) {
   const data = useMemo(() => {
     const now = new Date();
@@ -109,26 +105,20 @@ function AreaApilada({ reservas }) {
   );
 }
 
-// ── KPI numérico: ocupación % vs. período anterior ──────────────────────────
 function KpiOcupacion({ reservas }) {
   const { pctActual, pctAnterior, delta } = useMemo(() => {
     const now    = new Date();
     const hoy    = now.toISOString().split("T")[0];
-    // Esta semana
     const lunes  = new Date(now); lunes.setDate(now.getDate()  - ((now.getDay() + 6) % 7));
     const lunesS = lunes.toISOString().split("T")[0];
-    // Semana pasada
     const lunesP = new Date(lunes); lunesP.setDate(lunes.getDate() - 7);
     const lunesSP = lunesP.toISOString().split("T")[0];
     const domP    = new Date(lunes); domP.setDate(lunes.getDate() - 1);
     const domSP   = domP.toISOString().split("T")[0];
 
-    // Total slots disponibles esta semana (7 días × 7 canchas × 14 horas)
     const totalSlots = 7 * 7 * 14;
-
-    const semActual  = reservas.filter((r) => r.fecha >= lunesS && r.fecha <= hoy && r.estado !== "Cancelada").length;
+    const semActual   = reservas.filter((r) => r.fecha >= lunesS && r.fecha <= hoy && r.estado !== "Cancelada").length;
     const semAnterior = reservas.filter((r) => r.fecha >= lunesSP && r.fecha <= domSP && r.estado !== "Cancelada").length;
-
     const pA = Math.min(100, Math.round((semActual  / totalSlots) * 100));
     const pP = Math.min(100, Math.round((semAnterior / totalSlots) * 100));
     return { pctActual: pA, pctAnterior: pP, delta: pA - pP };
@@ -151,8 +141,6 @@ function KpiOcupacion({ reservas }) {
       <div className="kpi-ocu-bar-bg">
         <div className="kpi-ocu-bar-fill" style={{ width: `${pctActual}%`, background: "var(--accent)" }} />
       </div>
-
-      {/* Tabla rápida por estado */}
       <div className="stats-list" style={{ marginTop: 12 }}>
         {[
           { label: "Confirmadas",  val: reservas.filter((r) => r.estado === "Confirmada").length, color: "var(--status-ok-text)",    bg: "var(--status-ok-bg)"    },
@@ -170,7 +158,6 @@ function KpiOcupacion({ reservas }) {
   );
 }
 
-// ── Componente principal ────────────────────────────────────────────────────
 export default function KpisReservas({ reservas }) {
   const [periodo, setPeriodo] = useState("Mes");
 

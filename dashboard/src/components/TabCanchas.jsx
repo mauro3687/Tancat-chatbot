@@ -3,7 +3,7 @@ import { useState, useMemo, useCallback } from "react";
 import { useStore } from "../data/store.jsx";
 import { CANCHAS as CANCHAS_BASE, LOCALES, DEPORTE_EMOJI } from "../data/canchas.js";
 import Modal from "./Modal";
-import KpisCanchas from "./KpisCanchas.jsx";
+import KpisCanchas from "./kpis/KpisCanchas.jsx";
 import "../styles/TabCanchas.css";
 
 const HORAS = Array.from({ length: 14 }, (_, i) => `${String(8 + i).padStart(2, "0")}:00`);
