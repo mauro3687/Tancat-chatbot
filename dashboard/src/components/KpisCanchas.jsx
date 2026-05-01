@@ -94,7 +94,7 @@ function BarrasBloqueos({ bloqueos }) {
   }, [bloqueos]);
 
   const getColor = (deporte) => ({
-    padel: "#1d9e75", basquet: "#378add", voley: "#ef9f27",
+    padel: "#00C49A", basquet: "#4D8EF0", voley: "#F0A030",
   }[deporte] ?? "#6B7280");
 
   const CustomLabel = ({ x, y, width, value }) =>
@@ -137,7 +137,7 @@ function BarrasReservasPorCancha({ reservas }) {
   }, [reservas]);
 
   const getColor = (deporte) => ({
-    padel: "#1d9e75", basquet: "#378add", voley: "#ef9f27",
+    padel: "#00C49A", basquet: "#4D8EF0", voley: "#F0A030",
   }[deporte] ?? "#6B7280");
 
   return (

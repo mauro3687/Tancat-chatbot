@@ -100,9 +100,9 @@ function AreaApilada({ reservas }) {
           <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
           <Tooltip contentStyle={{ fontSize: 12 }} />
           <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
-          <Area type="monotone" dataKey="padel"   name="🎾 Pádel"   stackId="1" stroke="#1d9e75" fill="#1d9e7533" />
-          <Area type="monotone" dataKey="basquet" name="🏀 Básquet" stackId="1" stroke="#378add" fill="#378add33" />
-          <Area type="monotone" dataKey="voley"   name="🏐 Vóley"   stackId="1" stroke="#ef9f27" fill="#ef9f2733" />
+          <Area type="monotone" dataKey="padel"   name="🎾 Pádel"   stackId="1" stroke="#00C49A" fill="#00C49A22" />
+          <Area type="monotone" dataKey="basquet" name="🏀 Básquet" stackId="1" stroke="#4D8EF0" fill="#4D8EF022" />
+          <Area type="monotone" dataKey="voley"   name="🏐 Vóley"   stackId="1" stroke="#F0A030" fill="#F0A03022" />
         </AreaChart>
       </ResponsiveContainer>
     </div>
@@ -134,8 +134,8 @@ function KpiOcupacion({ reservas }) {
     return { pctActual: pA, pctAnterior: pP, delta: pA - pP };
   }, [reservas]);
 
-  const color = delta >= 0 ? "#166534" : "#991B1B";
-  const bg    = delta >= 0 ? "#DCFCE7" : "#FEE2E2";
+  const color = delta >= 0 ? "var(--status-ok-text)"  : "var(--status-error-text)";
+  const bg    = delta >= 0 ? "var(--status-ok-bg)"    : "var(--status-error-bg)";
 
   return (
     <div className="kpi-card-half kpi-ocu-box">
@@ -149,16 +149,16 @@ function KpiOcupacion({ reservas }) {
         {delta >= 0 ? "↑" : "↓"} {Math.abs(delta)}% vs. semana pasada ({pctAnterior}%)
       </div>
       <div className="kpi-ocu-bar-bg">
-        <div className="kpi-ocu-bar-fill" style={{ width: `${pctActual}%`, background: "#1d9e75" }} />
+        <div className="kpi-ocu-bar-fill" style={{ width: `${pctActual}%`, background: "var(--accent)" }} />
       </div>
 
       {/* Tabla rápida por estado */}
       <div className="stats-list" style={{ marginTop: 12 }}>
         {[
-          { label: "Confirmadas",  val: reservas.filter((r) => r.estado === "Confirmada").length, color: "#166534", bg: "#DCFCE7" },
-          { label: "Con seña",     val: reservas.filter((r) => r.estado === "Seña").length,       color: "#854D0E", bg: "#FEF9C3" },
-          { label: "Pendientes",   val: reservas.filter((r) => r.estado === "Pendiente").length,  color: "#854D0E", bg: "#FEF9C3" },
-          { label: "Canceladas",   val: reservas.filter((r) => r.estado === "Cancelada").length,  color: "#991B1B", bg: "#FEE2E2" },
+          { label: "Confirmadas",  val: reservas.filter((r) => r.estado === "Confirmada").length, color: "var(--status-ok-text)",    bg: "var(--status-ok-bg)"    },
+          { label: "Con seña",     val: reservas.filter((r) => r.estado === "Seña").length,       color: "var(--status-warn-text)",  bg: "var(--status-warn-bg)"  },
+          { label: "Pendientes",   val: reservas.filter((r) => r.estado === "Pendiente").length,  color: "var(--status-warn-text)",  bg: "var(--status-warn-bg)"  },
+          { label: "Canceladas",   val: reservas.filter((r) => r.estado === "Cancelada").length,  color: "var(--status-error-text)", bg: "var(--status-error-bg)" },
         ].map(({ label, val, color: c, bg: b }) => (
           <div key={label} className="stat-row">
             <span className="stat-label">{label}</span>

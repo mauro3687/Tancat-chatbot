@@ -49,6 +49,53 @@
   --radius-md:      10px;
   --radius-lg:      12px;
   --radius-xl:      16px;
+
+  /* ── Semantic status tokens — variantes oscuras para tema dark ─────
+     Todos usan rgba de baja opacidad sobre el fondo #0F1117.
+     Íconos + etiqueta siempre presentes junto al color.              */
+
+  /* Positivo / disponible / normal — verde teal del sistema           */
+  --status-ok-bg:        rgba(0, 196, 154, 0.12);
+  --status-ok-text:      #00C49A;
+  --status-ok-border:    rgba(0, 196, 154, 0.25);
+
+  /* Advertencia / stock bajo / próximo a límite — ámbar del sistema   */
+  --status-warn-bg:      rgba(240, 160, 48, 0.12);
+  --status-warn-text:    #F0A030;
+  --status-warn-border:  rgba(240, 160, 48, 0.25);
+
+  /* Crítico / error / bloqueado / stock mínimo — rojo del sistema     */
+  --status-error-bg:     rgba(240, 77, 106, 0.12);
+  --status-error-text:   #F04D6A;
+  --status-error-border: rgba(240, 77, 106, 0.25);
+
+  /* Neutro / sin datos / mantenimiento / no disponible                */
+  --status-neutral-bg:   rgba(255, 255, 255, 0.05);
+  --status-neutral-text: #8B92A8;
+  --status-neutral-border:rgba(255, 255, 255, 0.10);
+
+  /* ── Promotion card palette — versiones oscuras (tema dark) ────────
+     Cada tipo usa el color propio del sistema a baja opacidad.       */
+
+  /* Activa / destacada — azul del sistema                             */
+  --promo-active-bg:     rgba(77, 142, 240, 0.10);
+  --promo-active-text:   #4D8EF0;
+  --promo-active-accent: rgba(77, 142, 240, 0.25);
+
+  /* Oferta / descuento — ámbar del sistema                            */
+  --promo-offer-bg:      rgba(240, 160, 48, 0.10);
+  --promo-offer-text:    #F0A030;
+  --promo-offer-accent:  rgba(240, 160, 48, 0.25);
+
+  /* Vencida / inactiva — muy sutil                                    */
+  --promo-expired-bg:    rgba(255, 255, 255, 0.03);
+  --promo-expired-text:  #555C72;
+  --promo-expired-accent:rgba(255, 255, 255, 0.08);
+
+  /* Nueva / reciente — teal accent del sistema                        */
+  --promo-new-bg:        rgba(0, 196, 154, 0.10);
+  --promo-new-text:      #00C49A;
+  --promo-new-accent:    rgba(0, 196, 154, 0.25);
 }
 
 /* ── Reset ─────────────────────────────────────────────────────── */

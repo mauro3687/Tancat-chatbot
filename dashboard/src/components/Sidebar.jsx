@@ -1,4 +1,5 @@
 // src/components/Sidebar.jsx
+import { useState } from "react";
 import "../styles/Sidebar.css";
 import { useStore } from "../data/store.jsx";
 
@@ -112,12 +113,25 @@ const ROL_LABEL = {
 };
 
 export default function Sidebar({ activeTab, setActiveTab, tabsPermitidos }) {
-  const { currentUser, logout } = useStore();
+  const { currentUser, logout, reservas, prestamos, stock } = useStore();
+  const [confirmLogout, setConfirmLogout] = useState(false);
+
   const initials = currentUser?.nombre
     ?.split(" ")
     .map((w) => w[0])
     .slice(0, 2)
     .join("") ?? "AD";
+
+  // BUG-017: KPIs operativos en tiempo real
+  const kpiReservasPendientes = (reservas  ?? []).filter((r) => r.estado === "Pendiente").length;
+  const kpiPrestamosActivos   = (prestamos ?? []).filter((p) => p.estado === "entregado").length;
+  const kpiStockCritico       = (stock     ?? []).filter((s) => s.max > 0 && (s.cantidad / s.max) < 0.20).length;
+
+  // Mapa: qué KPI mostrar junto a cada tab
+  const kpiBadge = {
+    reservas:   kpiReservasPendientes > 0 ? { val: kpiReservasPendientes, color: "var(--status-warn-text)", bg: "var(--status-warn-bg)"   } : null,
+    inventario: kpiStockCritico > 0       ? { val: kpiStockCritico,       color: "var(--status-error-text)", bg: "var(--status-error-bg)" } : null,
+  };
 
   return (
     <aside className="sidebar">
@@ -129,6 +143,30 @@ export default function Sidebar({ activeTab, setActiveTab, tabsPermitidos }) {
         </div>
       </div>
 
+      {/* BUG-017: KPIs operativos compactos */}
+      {(kpiReservasPendientes > 0 || kpiPrestamosActivos > 0 || kpiStockCritico > 0) && (
+        <div className="sidebar-kpis">
+          {kpiReservasPendientes > 0 && (
+            <button className="sidebar-kpi-chip" onClick={() => setActiveTab("reservas")}
+              style={{ "--kc": "var(--status-warn-text)", "--kb": "var(--status-warn-bg)" }}>
+              📅 {kpiReservasPendientes} pendiente{kpiReservasPendientes !== 1 ? "s" : ""}
+            </button>
+          )}
+          {kpiPrestamosActivos > 0 && (
+            <button className="sidebar-kpi-chip" onClick={() => setActiveTab("inventario")}
+              style={{ "--kc": "var(--status-warn-text)", "--kb": "var(--status-warn-bg)" }}>
+              📦 {kpiPrestamosActivos} préstamo{kpiPrestamosActivos !== 1 ? "s" : ""}
+            </button>
+          )}
+          {kpiStockCritico > 0 && (
+            <button className="sidebar-kpi-chip" onClick={() => setActiveTab("inventario")}
+              style={{ "--kc": "var(--status-error-text)", "--kb": "var(--status-error-bg)" }}>
+              ⚠ {kpiStockCritico} stock crítico
+            </button>
+          )}
+        </div>
+      )}
+
       <nav className="sidebar-nav">
         {navItems.map((section) => {
           const itemsVisibles = section.items.filter((item) =>
@@ -138,47 +176,66 @@ export default function Sidebar({ activeTab, setActiveTab, tabsPermitidos }) {
           return (
             <div key={section.label}>
               <div className="nav-label">{section.label}</div>
-              {itemsVisibles.map((item) => (
-                <button
-                  key={item.id}
-                  className={`nav-item ${activeTab === item.id ? "active" : ""}`}
-                  onClick={() => setActiveTab(item.id)}
-                >
-                  {icons[item.id] ?? <span className="icon-placeholder" />}
-                  {item.text}
-                </button>
-              ))}
+              {itemsVisibles.map((item) => {
+                const badge = kpiBadge[item.id];
+                return (
+                  <button
+                    key={item.id}
+                    className={`nav-item ${activeTab === item.id ? "active" : ""}`}
+                    onClick={() => setActiveTab(item.id)}
+                  >
+                    {icons[item.id] ?? <span className="icon-placeholder" />}
+                    {item.text}
+                    {badge && (
+                      <span className="nav-badge" style={{ background: badge.bg, color: badge.color }}>
+                        {badge.val}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           );
         })}
       </nav>
 
       <div className="sidebar-footer">
-        <div className="user-row">
-          <div className="user-avatar">{initials}</div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="user-name">{currentUser?.nombre ?? "Admin"}</div>
-            <div className="user-role">{ROL_LABEL[currentUser?.rol] ?? "—"}</div>
+        {/* BUG-024: confirmación antes de cerrar sesión */}
+        {confirmLogout ? (
+          <div className="logout-confirm">
+            <span className="logout-confirm-text">¿Cerrar sesión?</span>
+            <div className="logout-confirm-btns">
+              <button className="btn btn-sm" onClick={() => setConfirmLogout(false)}>No</button>
+              <button className="btn btn-sm btn-delete" onClick={logout}>Sí</button>
+            </div>
           </div>
-          <button
-            onClick={logout}
-            title="Cerrar sesión"
-            style={{
-              background: "none", border: "none", cursor: "pointer",
-              color: "var(--text-muted)", padding: 4, borderRadius: 4,
-              display: "flex", alignItems: "center",
-              transition: "color 0.12s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-              <polyline points="16 17 21 12 16 7"/>
-              <line x1="21" y1="12" x2="9" y2="12"/>
-            </svg>
-          </button>
-        </div>
+        ) : (
+          <div className="user-row">
+            <div className="user-avatar">{initials}</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="user-name">{currentUser?.nombre ?? "Admin"}</div>
+              <div className="user-role">{ROL_LABEL[currentUser?.rol] ?? "—"}</div>
+            </div>
+            <button
+              onClick={() => setConfirmLogout(true)}
+              title="Cerrar sesión"
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                color: "var(--text-muted)", padding: 4, borderRadius: 4,
+                display: "flex", alignItems: "center",
+                transition: "color 0.12s",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
     </aside>
   );

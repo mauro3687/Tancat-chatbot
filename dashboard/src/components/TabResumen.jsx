@@ -59,8 +59,8 @@ function LineIngresosAnuales({ ventas, reservas }) {
           <div className="card-sub">Reservas + ventas · Total acumulado: <strong>${totalAnual}K</strong></div>
         </div>
         <div className="chart-legend">
-          <span className="legend-item"><span className="legend-sq" style={{ '--sq-c': "#1d9e75" }} />Reservas</span>
-          <span className="legend-item"><span className="legend-sq" style={{ '--sq-c': "#378add" }} />Ventas</span>
+          <span className="legend-item"><span className="legend-sq" style={{ '--sq-c': "#00C49A" }} />Reservas</span>
+          <span className="legend-item"><span className="legend-sq" style={{ '--sq-c': "#4D8EF0" }} />Ventas</span>
         </div>
       </div>
       <ResponsiveContainer width="100%" height={200}>
@@ -80,11 +80,11 @@ function LineIngresosAnuales({ ventas, reservas }) {
           />
           <Line
             type="monotone" dataKey="Reservas ($K)"
-            stroke="#1d9e75" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }}
+            stroke="#00C49A" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }}
           />
           <Line
             type="monotone" dataKey="Ventas ($K)"
-            stroke="#378add" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }}
+            stroke="#4D8EF0" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }}
           />
         </LineChart>
       </ResponsiveContainer>

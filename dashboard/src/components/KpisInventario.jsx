@@ -1,5 +1,31 @@
 // src/components/KpisInventario.jsx — KPIs visuales del módulo Inventario
 import { useMemo } from "react";
+
+// ── SVG icons locales ────────────────────────────────────────────────────────
+function IcoWarning({ s = 12 }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+      <line x1="12" y1="9" x2="12" y2="13"/>
+      <line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+  );
+}
+function IcoBell({ s = 12 }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+      <path d="M13.73 21a2 2 0 01-3.46 0"/>
+    </svg>
+  );
+}
+function IcoCheck({ s = 12 }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+  );
+}
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, PieChart, Pie, Legend,
@@ -8,7 +34,8 @@ import "../styles/KpisInventario.css";
 
 // ── Gauge SVG: % global de stock del inventario ─────────────────────────────
 // Pregunta: "¿Qué tan lleno está el inventario en su conjunto?"
-function GaugeStockGlobal({ stock }) {
+function GaugeStockGlobal({ items }) {
+  const stock = items;
   const { pct, totalActual, totalMax } = useMemo(() => {
     const tMax = stock.reduce((s, p) => s + (p.max || 0), 0);
     const tAct = stock.reduce((s, p) => s + (p.cantidad || 0), 0);
@@ -23,8 +50,8 @@ function GaugeStockGlobal({ stock }) {
   const cx = 90; const cy = 86;
   const circum = Math.PI * radius;
   const offset = circum - (pct / 100) * circum;
-  const color = pct >= 60 ? "#166534" : pct >= 30 ? "#854D0E" : "#991B1B";
-  const bgColor = pct >= 60 ? "#DCFCE7" : pct >= 30 ? "#FEF9C3" : "#FEE2E2";
+  const color   = pct >= 60 ? "var(--status-ok-text)"   : pct >= 30 ? "var(--status-warn-text)"  : "var(--status-error-text)";
+  const bgColor = pct >= 60 ? "var(--status-ok-bg)"     : pct >= 30 ? "var(--status-warn-bg)"    : "var(--status-error-bg)";
 
   return (
     <div className="kpi-inv-card kpi-inv-half" style={{ background: bgColor }}>
@@ -46,11 +73,11 @@ function GaugeStockGlobal({ stock }) {
             style={{ transition: "stroke-dashoffset 0.8s ease" }}
           />
           <text x={cx} y={cy - 6}  textAnchor="middle" fontSize="26" fontWeight="800" fill={color}>{pct}%</text>
-          <text x={cx} y={cy + 12} textAnchor="middle" fontSize="9"  fill="rgba(0,0,0,0.5)">del máximo</text>
-          <text x={cx - radius + 2} y={cy + 18} textAnchor="middle" fontSize="9" fill="rgba(0,0,0,0.4)">0%</text>
-          <text x={cx + radius - 2} y={cy + 18} textAnchor="middle" fontSize="9" fill="rgba(0,0,0,0.4)">100%</text>
+          <text x={cx} y={cy + 12} textAnchor="middle" fontSize="10" fill="#8B92A8">del máximo</text>
+          <text x={cx - radius + 2} y={cy + 18} textAnchor="middle" fontSize="9"  fill="#8B92A8">0%</text>
+          <text x={cx + radius - 2} y={cy + 18} textAnchor="middle" fontSize="9"  fill="#8B92A8">100%</text>
         </svg>
-        <div style={{ fontSize: 12, color: "rgba(0,0,0,0.55)", marginTop: 4 }}>
+        <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 4, fontWeight: 500 }}>
           {totalActual.toLocaleString("es-AR")} u. de {totalMax.toLocaleString("es-AR")} u. máximas
         </div>
       </div>
@@ -60,9 +87,11 @@ function GaugeStockGlobal({ stock }) {
 
 // ── Pie: proporción de productos por estado ─────────────────────────────────
 // Pregunta: "¿Qué fracción del catálogo está en cada nivel de alerta?"
-const PIE_COLORS = { Normal: "#166534", Bajo: "#854D0E", Crítico: "#991B1B" };
+// Colores usados en Recharts (SVG fill) → hex del sistema dark
+const PIE_COLORS = { Normal: "#00C49A", Bajo: "#F0A030", Crítico: "#F04D6A" };
 
-function PieEstados({ stock }) {
+function PieEstados({ items }) {
+  const stock = items;
   const data = useMemo(() => {
     let normal = 0, bajo = 0, critico = 0;
     stock.forEach((s) => {
@@ -72,9 +101,9 @@ function PieEstados({ stock }) {
       else               normal++;
     });
     return [
-      { name: "Normal",  value: normal,  icon: "✓" },
-      { name: "Bajo",    value: bajo,    icon: "🔔" },
-      { name: "Crítico", value: critico, icon: "⚠"  },
+      { name: "Normal",  value: normal  },
+      { name: "Bajo",    value: bajo    },
+      { name: "Crítico", value: critico },
     ].filter((d) => d.value > 0);
   }, [stock]);
 
@@ -114,7 +143,7 @@ function PieEstados({ stock }) {
           <Legend
             formatter={(value, entry) => (
               <span style={{ fontSize: 12, color: PIE_COLORS[value] }}>
-                {entry.payload.icon} {value} ({entry.payload.value})
+                {value} ({entry.payload.value})
               </span>
             )}
           />
@@ -130,7 +159,8 @@ function PieEstados({ stock }) {
 
 // ── Barras agrupadas: actual vs. máximo por producto ─────────────────────────
 // Pregunta: "¿Cuánto le falta a cada producto para estar al máximo?"
-function BarrasActualVsMax({ stock }) {
+function BarrasActualVsMax({ items }) {
+  const stock = items;
   const data = useMemo(() =>
     [...stock]
       .sort((a, b) => {
@@ -149,9 +179,9 @@ function BarrasActualVsMax({ stock }) {
   [stock]);
 
   const getActualColor = (pct) => {
-    if (pct < 20) return "#991B1B";
-    if (pct < 45) return "#854D0E";
-    return "#1d9e75";
+    if (pct < 20) return "#F04D6A";   // rojo del sistema
+    if (pct < 45) return "#F0A030";   // ámbar del sistema
+    return "#00C49A";                  // teal accent del sistema
   };
 
   return (
@@ -166,7 +196,7 @@ function BarrasActualVsMax({ stock }) {
           barGap={2}
           barCategoryGap="28%"
         >
-          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(0,0,0,0.07)" />
+          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(255,255,255,0.06)" />
           <XAxis type="number" tick={{ fontSize: 11 }} />
           <YAxis
             type="category"
@@ -183,7 +213,7 @@ function BarrasActualVsMax({ stock }) {
           />
           <Legend wrapperStyle={{ fontSize: 12 }} />
           {/* Máximo va primero (fondo) */}
-          <Bar dataKey="Máximo" fill="rgba(0,0,0,0.08)" radius={[0, 4, 4, 0]} />
+          <Bar dataKey="Máximo" fill="rgba(255,255,255,0.07)" radius={[0, 4, 4, 0]} />
           {/* Actual va encima con color semántico */}
           <Bar dataKey="Actual" radius={[0, 4, 4, 0]}>
             {data.map((entry, i) => (
@@ -197,7 +227,8 @@ function BarrasActualVsMax({ stock }) {
 }
 
 // ── Lista de productos que requieren atención ───────────────────────────────
-function ListaAtencion({ stock }) {
+function ListaAtencion({ items }) {
+  const stock = items;
   const urgentes = useMemo(() =>
     [...stock]
       .filter((s) => s.max > 0 && (s.cantidad / s.max) < 0.45)
@@ -211,14 +242,14 @@ function ListaAtencion({ stock }) {
       <div className="kpi-inv-sub">Ordenados por urgencia</div>
       <div className="atention-list">
         {urgentes.length === 0 ? (
-          <div className="atent-ok">✓ Todos los productos en nivel normal</div>
+          <div className="atent-ok"><IcoCheck s={13} /> Todos los productos en nivel normal</div>
         ) : (
           urgentes.map((s) => {
             const pct     = Math.round((s.cantidad / s.max) * 100);
             const critico = pct < 20;
             return (
               <div key={s.id} className={`atent-row ${critico ? "atent-critico" : "atent-bajo"}`}>
-                <span className="atent-icon">{critico ? "⚠" : "🔔"}</span>
+                <span className="atent-icon">{critico ? <IcoWarning s={12} /> : <IcoBell s={12} />}</span>
                 <span className="atent-nombre">{s.nombre.toUpperCase()}</span>
                 <span className="atent-pct">{pct}%</span>
                 <span className="atent-qty">{s.cantidad}/{s.max} {s.unidad}</span>
@@ -232,7 +263,8 @@ function ListaAtencion({ stock }) {
 }
 
 // ── Stats resumen ────────────────────────────────────────────────────────────
-function ResumenInventario({ stock }) {
+function ResumenInventario({ items }) {
+  const stock    = items;
   const criticos = stock.filter((s) => s.max > 0 && (s.cantidad / s.max) < 0.20).length;
   const bajos    = stock.filter((s) => { const p = s.max > 0 ? s.cantidad / s.max : 0; return p >= 0.20 && p < 0.45; }).length;
   const normales = stock.length - criticos - bajos;
@@ -246,9 +278,9 @@ function ResumenInventario({ stock }) {
         {[
           { label: "Total productos",    val: stock.length, color: null },
           { label: "Unidades en stock",  val: totalU,       color: null },
-          { label: "✓ Nivel normal",     val: normales,     color: "#166534", bg: "#DCFCE7" },
-          { label: "🔔 Stock bajo",      val: bajos,        color: "#854D0E", bg: "#FEF9C3" },
-          { label: "⚠ Stock crítico",    val: criticos,     color: "#991B1B", bg: "#FEE2E2" },
+          { label: "Nivel normal",  val: normales,  color: "var(--status-ok-text)",    bg: "var(--status-ok-bg)"    },
+          { label: "Stock bajo",    val: bajos,     color: "var(--status-warn-text)",  bg: "var(--status-warn-bg)"  },
+          { label: "Stock crítico", val: criticos,  color: "var(--status-error-text)", bg: "var(--status-error-bg)" },
         ].map(({ label, val, color, bg }) => (
           <div key={label} className="inv-stat-row">
             <span className="inv-stat-label">{label}</span>
@@ -266,28 +298,42 @@ function ResumenInventario({ stock }) {
 }
 
 // ── Componente principal ────────────────────────────────────────────────────
-export default function KpisInventario({ stock }) {
-  if (!stock || stock.length === 0) return null;
+export default function KpisInventario({ stock, items, title = "Análisis de inventario", prestamos }) {
+  const data = items ?? stock ?? [];
+  if (!data || data.length === 0) return null;
+
+  // Stats de categorías (solo en modo global cuando llega `prestamos`)
+  const showGlobal = prestamos !== undefined;
+  const cntEme   = showGlobal ? data.filter((s) => !s.categoria || s.categoria === "emergencia").length : null;
+  const cntVenta = showGlobal ? data.filter((s) => s.categoria === "venta").length : null;
+  const cntPre   = showGlobal ? (prestamos ?? []).filter((p) => p.estado === "entregado").length : null;
 
   return (
     <div className="kpis-inv-section">
       <div className="kpis-inv-header">
-        <div className="kpis-inv-title">Análisis de inventario</div>
+        <div className="kpis-inv-title">{title}</div>
+        {showGlobal && (
+          <div className="kpis-inv-cats">
+            <span className="kpis-inv-cat-chip">🔧 {cntEme} emergencia</span>
+            <span className="kpis-inv-cat-chip">🛒 {cntVenta} venta</span>
+            <span className="kpis-inv-cat-chip" style={{ color: "var(--status-warn-text)" }}>🤝 {cntPre} préstamos activos</span>
+          </div>
+        )}
       </div>
 
       {/* Fila 1: gauge global + pie de estados */}
       <div className="kpis-inv-row-2">
-        <GaugeStockGlobal stock={stock} />
-        <PieEstados       stock={stock} />
+        <GaugeStockGlobal items={data} />
+        <PieEstados       items={data} />
       </div>
 
       {/* Fila 2: barras actual vs. máximo (full width) */}
-      <BarrasActualVsMax stock={stock} />
+      <BarrasActualVsMax items={data} />
 
       {/* Fila 3: resumen stats + lista de atención */}
       <div className="kpis-inv-row-2">
-        <ResumenInventario stock={stock} />
-        <ListaAtencion     stock={stock} />
+        <ResumenInventario items={data} />
+        <ListaAtencion     items={data} />
       </div>
     </div>
   );

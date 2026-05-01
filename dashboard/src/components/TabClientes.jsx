@@ -30,17 +30,21 @@ export default function TabClientes() {
   const closeModal = () => setModal(null);
   const setField   = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
+  // BUG-022: solo por ID — el fallback por nombre genera duplicados con nombres repetidos
   const getReservasCliente = (cliente) =>
-    reservas.filter((r) =>
-      r.clienteId === cliente.id ||
-      (r.cliente && r.cliente === cliente.nombre)
-    );
+    reservas.filter((r) => r.clienteId === cliente.id);
 
   const validate = () => {
     const e = {};
     if (!form.nombre.trim()) e.nombre = "El nombre es obligatorio";
     if (!form.email.trim()) e.email = "El email es obligatorio";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Email inválido";
+    else {
+      // BUG-012: unicidad de email — excluye el propio cliente en edición
+      const editId = modal?.mode === "edit" ? modal.data.id : null;
+      const dup = clientes.find((c) => c.id !== editId && c.email?.toLowerCase() === form.email.trim().toLowerCase());
+      if (dup) e.email = "Ya existe un cliente con ese email";
+    }
     if (!form.telefono.trim()) e.telefono = "El teléfono es obligatorio";
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -52,6 +56,9 @@ export default function TabClientes() {
     else updateCliente(modal.data.id, form);
     closeModal();
   };
+
+  const reservasActivasDelCliente = (clienteId) =>
+    reservas.filter((r) => r.clienteId === clienteId && r.estado !== "Cancelada");
 
   const handleDelete = () => {
     deleteCliente(modal.data.id);
@@ -70,7 +77,7 @@ export default function TabClientes() {
 
       <div className="card">
         <div className="filter-row">
-          <input type="text" placeholder="Buscar por nombre, email o ciudad..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input type="text" placeholder="Buscar por nombre, email, teléfono o ciudad..." value={search} onChange={(e) => setSearch(e.target.value)} />
           <button className="btn" onClick={() => setSearch("")}>Limpiar</button>
         </div>
         <div className="table-wrapper">
@@ -131,7 +138,7 @@ export default function TabClientes() {
                       <td>{r.servicio}</td>
                       <td>{r.fecha}</td>
                       <td>${Number(r.monto).toLocaleString("es-AR")}</td>
-                      <td><span className={`status ${{ Confirmada: "s-confirmed", Pendiente: "s-pending", Cancelada: "s-cancelled" }[r.estado]}`}>{r.estado}</span></td>
+                      <td><span className={`status ${{ Confirmada: "s-confirmed", Pendiente: "s-pending", Seña: "s-sena", Cancelada: "s-cancelled" }[r.estado] ?? ""}`}>{r.estado}</span></td>
                     </tr>
                   ))}
               </tbody>
@@ -167,17 +174,25 @@ export default function TabClientes() {
       )}
 
       {/* Eliminar */}
-      {modal?.mode === "delete" && (
-        <Modal title="Eliminar cliente" onClose={closeModal} size="sm">
-          <p className="modal-confirm-text">
-            ¿Eliminás a <strong>{modal.data.nombre}</strong>? Esta acción no se puede deshacer.
-          </p>
-          <div className="modal-actions">
-            <button className="btn" onClick={closeModal}>Cancelar</button>
-            <button className="btn btn-delete" onClick={handleDelete}>Eliminar</button>
-          </div>
-        </Modal>
-      )}
+      {modal?.mode === "delete" && (() => {
+        const activas = reservasActivasDelCliente(modal.data.id);
+        return (
+          <Modal title="Eliminar cliente" onClose={closeModal} size="sm">
+            <p className="modal-confirm-text">
+              ¿Eliminás a <strong>{modal.data.nombre}</strong>? Esta acción no se puede deshacer.
+            </p>
+            {activas.length > 0 && (
+              <div className="inv-alert-danger" style={{ marginBottom: 12 }}>
+                ⚠ Este cliente tiene <strong>{activas.length}</strong> reserva{activas.length !== 1 ? "s" : ""} activa{activas.length !== 1 ? "s" : ""}. Al eliminarlo quedarán sin cliente asignado.
+              </div>
+            )}
+            <div className="modal-actions">
+              <button className="btn" onClick={closeModal}>Cancelar</button>
+              <button className="btn btn-delete" onClick={handleDelete}>Eliminar igual</button>
+            </div>
+          </Modal>
+        );
+      })()}
     </div>
   );
 }

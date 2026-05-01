@@ -280,10 +280,11 @@
 /* ── ContenidoCard ──────────────────────────────────────────────── */
 .contenido-card {
   border-radius: 12px;
-  padding: 1rem 1.1rem;
+  /* Espaciado generoso — el contenido no debe estar apretado contra los bordes */
+  padding: 1.2rem 1.4rem;
   margin-bottom: 10px;
   border: 1px solid var(--col-border, #ccc);
-  background: var(--col-bg, #fff);
+  background: var(--col-bg, var(--bg-card));
   animation: fadeSlide 0.3s ease var(--anim-delay, 0s) both;
 }
 .contenido-card-header  { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
@@ -292,24 +293,27 @@
 .contenido-tipo-badge   { font-size: 10px; font-weight: 700; padding: 2px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; background: var(--badge-bg); color: var(--badge-color); border: 1px solid var(--badge-border); }
 .contenido-title        { font-weight: 600; font-size: 14px; color: var(--col-text, inherit); }
 .contenido-platform     { font-size: 11px; color: var(--gray-400); }
-.contenido-desc         { font-size: 12.5px; color: var(--gray-600, #5F5E5A); margin: 0; line-height: 1.5; }
+.contenido-desc         { font-size: 12.5px; color: var(--col-text, var(--text-secondary)); margin: 0; line-height: 1.5; }
 
 .contenido-toggle-btn {
   font-size: 12px;
   padding: 4px 10px;
   border-radius: 8px;
-  background: #fff;
+  /* Transparent so the card background shows through — no aggressive #fff */
+  background: rgba(0, 0, 0, 0.06);
   border: 1px solid var(--col-border, #ccc);
   color: var(--col-text, inherit);
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
+  transition: background 0.12s;
 }
+.contenido-toggle-btn:hover { background: rgba(0, 0, 0, 0.10); }
 
-.contenido-caption        { margin-top: 10px; padding: 10px 14px; background: rgba(0,0,0,0.12); border-radius: 8px; border: 1px solid var(--col-border, #ccc); }
+.contenido-caption        { margin-top: 10px; padding: 10px 14px; background: rgba(0,0,0,0.05); border-radius: 8px; border: 1px solid var(--col-border, #ccc); }
 .contenido-caption-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
 .contenido-caption-title  { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--col-text, inherit); }
-.contenido-caption-text   { font-size: 13px; color: var(--text-primary); font-weight: 500; line-height: 1.6; font-style: italic; white-space: pre-line; }
+.contenido-caption-text   { font-size: 13px; color: var(--col-text, var(--text-primary)); font-weight: 500; line-height: 1.6; white-space: pre-line; }
 .contenido-when           { margin-top: 8px; padding-top: 8px; font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 5px; border-top: 1px solid var(--col-border, #ccc); flex-wrap: wrap; }
 .contenido-horario-optimo { margin-left: 8px; color: var(--text-muted); }
 

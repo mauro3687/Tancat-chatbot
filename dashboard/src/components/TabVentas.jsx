@@ -13,7 +13,7 @@ const EMPTY = {
   clienteId:      "",
   productoId:     "",
   cantidad:       1,
-  fecha:          hoy(),
+  fecha:          "",   // BUG-025: evaluado en openAdd con hoy(), no al cargar el módulo
   monto:          0,
   metodoPago:     "Efectivo",
   estado:         "Cobrado",
@@ -158,6 +158,9 @@ export default function TabVentas() {
       const prod = stock.find((s) => s.id === v.productoId);
       if (prod) {
         await updateStock(prod.id, { cantidad: prod.cantidad + Number(v.cantidad) });
+      } else {
+        // BUG-015: producto ya no existe en inventario — advertir en consola y continuar
+        console.warn(`TabVentas: no se restauró stock del producto ${v.productoId} (eliminado del inventario)`);
       }
     }
     closeModal();
@@ -327,7 +330,7 @@ export default function TabVentas() {
                       <span>📦 Stock disponible: <strong>{stockDisponible} {productoSeleccionado.unidad}</strong></span>
                       {productoSeleccionado.precioUnitario
                         ? <span>💰 Precio: <strong>{fmt(productoSeleccionado.precioUnitario)}/{productoSeleccionado.unidad}</strong></span>
-                        : <span style={{ color: "#854D0E" }}>⚠ Este producto no tiene precio configurado. Editalo en Inventario.</span>
+                        : <span style={{ color: "var(--status-warn-text)" }}>⚠ Este producto no tiene precio configurado. Editalo en Inventario.</span>
                       }
                     </div>
                   )}
@@ -414,21 +417,29 @@ export default function TabVentas() {
       )}
 
       {/* Modal Eliminar */}
-      {modal?.mode === "delete" && (
+      {modal?.mode === "delete" && (() => {
+        const prodExiste = modal.data.productoId ? stock.some((s) => s.id === modal.data.productoId) : false;
+        return (
         <Modal title="Eliminar venta" onClose={closeModal} size="sm">
           <p className="modal-confirm-text">
             ¿Eliminás la venta <strong>{modal.data.id}</strong> de{" "}
             <strong>{modal.data.clienteNombre || modal.data.cliente || "—"}</strong>?
-            {modal.data.cantidad && modal.data.productoNombre && (
+            {modal.data.cantidad && modal.data.productoNombre && prodExiste && (
               <> Se restaurarán <strong>{modal.data.cantidad} {modal.data.unidad}</strong> de <strong>{modal.data.productoNombre}</strong> al inventario.</>
             )}
           </p>
+          {modal.data.productoId && !prodExiste && (
+            <div className="inv-alert-warning" style={{ marginBottom: 10 }}>
+              ⚠ El producto <strong>{modal.data.productoNombre}</strong> ya no existe en el inventario. El stock NO se restaurará.
+            </div>
+          )}
           <div className="modal-actions">
             <button className="btn" onClick={closeModal}>Cancelar</button>
             <button className="btn btn-delete" onClick={handleDelete}>Eliminar</button>
           </div>
         </Modal>
-      )}
+        );
+      })()}
     </div>
   );
 }

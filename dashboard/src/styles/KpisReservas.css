@@ -27,8 +27,8 @@
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
-.pill:hover     { background: rgba(29,158,117,0.08); }
-.pill-active    { background: #1d9e75; color: #fff; border-color: #1d9e75; }
+.pill:hover     { background: var(--accent-muted); }
+.pill-active    { background: var(--accent); color: #002820; border-color: var(--accent); }
 
 /* Cards */
 .kpi-card-full {

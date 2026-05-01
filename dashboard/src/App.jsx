@@ -17,9 +17,9 @@ import TabWhatsApp from "./components/TabWhatsApp";
 import "./App.css";
 import "./styles/shared.css";
 
-// Tabs permitidos por rol
+// Tabs permitidos por rol (BUG-020: whatsapp removido — nav item comentado, acceso deshabilitado)
 const TAB_PERMISOS = {
-  admin:     ["resumen", "reservas", "canchas", "clientes", "ventas", "inventario", "ia", "reportes", "whatsapp", "configuracion"],
+  admin:     ["resumen", "reservas", "canchas", "clientes", "ventas", "inventario", "ia", "reportes", "configuracion"],
   encargado: ["reservas", "canchas", "clientes", "ventas", "inventario", "configuracion"],
 };
 

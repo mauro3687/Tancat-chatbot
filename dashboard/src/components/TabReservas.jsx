@@ -7,6 +7,7 @@ import "../styles/TabReservas.css";
 
 const STATUS_CLASS = { Confirmada: "s-confirmed", Pendiente: "s-pending", Seña: "s-sena", Cancelada: "s-cancelled" };
 const ESTADOS = ["Confirmada", "Seña", "Pendiente", "Cancelada"];
+const TODAS_SEDES = ["local-1", "local-2"];
 
 const HORAS_INICIO = Array.from({ length: 14 }, (_, i) => {
   const h = 8 + i;
@@ -39,6 +40,10 @@ function buildHorario(horaInicio, horas) {
   if (!horaInicio) return "";
   const h = parseInt(horaInicio);
   return `${String(h).padStart(2, "0")}:00 — ${String(h + horas).padStart(2, "0")}:00`;
+}
+
+function sedeLabel(id) {
+  return LOCALES[id]?.nombre.replace("TanCat — ", "") ?? id;
 }
 
 function ModalDetalle({ reserva: r, clientes, onClose, onEdit }) {
@@ -99,12 +104,30 @@ function ModalDetalle({ reserva: r, clientes, onClose, onEdit }) {
 }
 
 export default function TabReservas() {
-  const { reservas, clientes, bloqueos, addReserva, updateReserva, deleteReserva, config } = useStore();
+  const { reservas, clientes, bloqueos, addReserva, updateReserva, deleteReserva, config, currentUser } = useStore();
+
+  const sedesPermitidas = currentUser?.rol === "encargado" && currentUser?.sede
+    ? [currentUser.sede]
+    : TODAS_SEDES;
+
+  const [activeSede, setActiveSede] = useState(() => {
+    const saved = sessionStorage.getItem("tancat_sede_reservas");
+    return (saved && sedesPermitidas.includes(saved)) ? saved : sedesPermitidas[0];
+  });
+
   const [search, setSearch] = useState("");
   const [filterEstado, setFilterEstado] = useState("");
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState(EMPTY);
   const [errors, setErrors] = useState({});
+
+  const handleSedeChange = (sedeId) => {
+    setActiveSede(sedeId);
+    sessionStorage.setItem("tancat_sede_reservas", sedeId);
+    setSearch("");
+    setFilterEstado("");
+    setForm((f) => ({ ...f, canchaId: "", cancha: "", localId: "" }));
+  };
 
   const getPrecio = (dep) => config?.precios?.[dep] ?? PRECIOS[dep] ?? 0;
   const senaPct = (config?.sena ?? 30) / 100;
@@ -117,7 +140,13 @@ export default function TabReservas() {
     return r.cliente || "—";
   };
 
-  const filtered = reservas.filter((r) => {
+  // Reservas de la sede activa (reservas sin localId → centro por defecto)
+  const reservasSede = useMemo(() =>
+    reservas.filter((r) => (r.localId || "local-1") === activeSede),
+    [reservas, activeSede]
+  );
+
+  const filtered = reservasSede.filter((r) => {
     const q = search.toLowerCase();
     const nombre = clienteNombre(r).toLowerCase();
     const id = (r.id || "").toLowerCase();
@@ -128,23 +157,36 @@ export default function TabReservas() {
     );
   });
 
+  const hoy = new Date().toISOString().split("T")[0];
+  const kpisSede = useMemo(() => {
+    const hoyActivas = reservasSede.filter((r) => r.fecha === hoy && r.estado !== "Cancelada");
+    return {
+      hoy: hoyActivas.length,
+      ingresos: hoyActivas
+        .filter((r) => r.estado === "Confirmada")
+        .reduce((s, r) => s + (r.monto || 0), 0),
+      pendientes: reservasSede.filter((r) => r.estado === "Pendiente").length,
+    };
+  }, [reservasSede, hoy]);
+
   const { canchasLibres, todasOcupadas } = useMemo(() => {
     if (!form.deporte || !form.fecha || !form.horaInicio) {
-      return { canchasLibres: CANCHAS.filter((c) => c.deporte === form.deporte), todasOcupadas: false };
+      return {
+        canchasLibres: CANCHAS.filter((c) => c.deporte === form.deporte && c.localId === activeSede),
+        todasOcupadas: false,
+      };
     }
     const hInicio    = parseInt(form.horaInicio);
     const nuevaRange = { inicio: hInicio, fin: hInicio + (form.horas || 1) };
     const currentId  = modal?.data?.id;
-    const canchasDeporte = CANCHAS.filter((c) => c.deporte === form.deporte);
+    const canchasDeporte = CANCHAS.filter((c) => c.deporte === form.deporte && c.localId === activeSede);
     const libres = canchasDeporte.filter((cancha) => {
-      // Verificar conflicto con reservas activas
       const conflictoReserva = reservas.some((r) => {
         if (r.canchaId !== cancha.id || r.fecha !== form.fecha) return false;
         if (r.estado === "Cancelada" || r.id === currentId) return false;
         const ex = parseHorarioRange(r.horario);
         return ex && ex.inicio < nuevaRange.fin && ex.fin > nuevaRange.inicio;
       });
-      // Verificar conflicto con bloqueos de mantenimiento
       const bloqueada = bloqueos.some((b) => {
         if (b.canchaId !== cancha.id || b.fecha !== form.fecha) return false;
         const bh = parseInt(b.hora);
@@ -153,7 +195,7 @@ export default function TabReservas() {
       return !conflictoReserva && !bloqueada;
     });
     return { canchasLibres: libres, todasOcupadas: canchasDeporte.length > 0 && libres.length === 0 };
-  }, [form.deporte, form.fecha, form.horaInicio, form.horas, reservas, bloqueos, modal?.data?.id]);
+  }, [form.deporte, form.fecha, form.horaInicio, form.horas, reservas, bloqueos, modal?.data?.id, activeSede]);
 
   const openAdd    = () => { setForm(EMPTY); setErrors({}); setModal({ mode: "add" }); };
   const openEdit   = (r) => {
@@ -195,10 +237,10 @@ export default function TabReservas() {
     setForm((f) => ({
       ...f,
       canchaId: cancha.id,
-      cancha: cancha.nombre,
-      localId: cancha.localId,
+      cancha:   cancha.nombre,
+      localId:  cancha.localId,
       servicio: `${DEPORTE_EMOJI[f.deporte]} ${f.deporte.charAt(0).toUpperCase() + f.deporte.slice(1)} — ${cancha.nombre}`,
-      personas: cancha.capacidad,
+      personas: f.personas && f.personas !== cancha.capacidad ? f.personas : cancha.capacidad,
     }));
   };
 
@@ -230,11 +272,28 @@ export default function TabReservas() {
   const validate = () => {
     const e = {};
     const esEdicion = modal?.mode === "edit";
-    if (!form.clienteId)              e.clienteId  = "Seleccioná un cliente";
-    if (!form.deporte)                e.deporte    = "Seleccioná un deporte";
-    if (!esEdicion && !form.canchaId) e.canchaId   = "Seleccioná una cancha";
-    if (!form.fecha)                  e.fecha      = "Ingresá una fecha";
-    if (!form.horaInicio)             e.horaInicio = "Seleccioná una hora de inicio";
+    const hoyStr = new Date().toISOString().split("T")[0];
+    if (!form.clienteId)  e.clienteId  = "Seleccioná un cliente";
+    if (!form.deporte)    e.deporte    = "Seleccioná un deporte";
+    if (!form.canchaId)   e.canchaId   = "Seleccioná una cancha";
+    if (!form.fecha)      e.fecha      = "Ingresá una fecha";
+    else if (form.fecha < hoyStr) e.fecha = "No se pueden crear reservas en fechas pasadas";
+    if (!form.horaInicio) e.horaInicio = "Seleccioná una hora de inicio";
+
+    if (esEdicion && form.canchaId && form.fecha && form.horaInicio) {
+      const hInicio    = parseInt(form.horaInicio);
+      const nuevaRange = { inicio: hInicio, fin: hInicio + (form.horas || 1) };
+      const currentId  = modal?.data?.id;
+      const conflicto  = reservas.some((r) => {
+        if (r.canchaId !== form.canchaId || r.fecha !== form.fecha) return false;
+        if (r.estado === "Cancelada" || r.id === currentId) return false;
+        const parts = r.horario?.split("—").map((s) => parseInt(s.trim()));
+        if (!parts || parts.length < 2) return false;
+        return parts[0] < nuevaRange.fin && parts[1] > nuevaRange.inicio;
+      });
+      if (conflicto) e.canchaId = "Esa cancha ya tiene una reserva en ese horario";
+    }
+
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -257,7 +316,9 @@ export default function TabReservas() {
   };
 
   const canchasParaSelect = form.deporte
-    ? (form.fecha && form.horaInicio ? canchasLibres : CANCHAS.filter((c) => c.deporte === form.deporte))
+    ? (form.fecha && form.horaInicio
+        ? canchasLibres
+        : CANCHAS.filter((c) => c.deporte === form.deporte && c.localId === activeSede))
     : [];
 
   const clienteSeleccionado = clientes.find((c) => c.id === form.clienteId);
@@ -272,6 +333,35 @@ export default function TabReservas() {
           </div>
         </div>
         <button className="btn btn-primary" onClick={openAdd}>+ Nueva reserva</button>
+      </div>
+
+      {/* Pestañas de sede */}
+      {sedesPermitidas.length > 1 && (
+        <div className="sede-tabs">
+          {sedesPermitidas.map((sedeId) => (
+            <button
+              key={sedeId}
+              className={`sede-tab${activeSede === sedeId ? " active" : ""}`}
+              onClick={() => handleSedeChange(sedeId)}
+            >
+              {sedeLabel(sedeId)}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* KPIs por sede */}
+      <div className="kpi-grid kpi-grid-3" style={{ marginBottom: 12 }}>
+        {[
+          { label: "Reservas hoy",  val: kpisSede.hoy },
+          { label: "Pendientes",    val: kpisSede.pendientes,            color: "var(--amber)", bg: "rgba(240,160,48,0.06)" },
+          { label: "Ingresos hoy",  val: formatMonto(kpisSede.ingresos), color: "var(--accent)", bg: "var(--accent-muted)" },
+        ].map((k) => (
+          <div key={k.label} className="kpi-card" style={{ background: k.bg }}>
+            <div className="metric-label">{k.label}</div>
+            <div className="kpi-value" style={k.color ? { "--kpi-c": k.color } : {}}>{k.val}</div>
+          </div>
+        ))}
       </div>
 
       <div className="card">
@@ -337,7 +427,7 @@ export default function TabReservas() {
       {/* Modal Alta / Edición */}
       {(modal?.mode === "add" || modal?.mode === "edit") && (
         <Modal
-          title={modal.mode === "add" ? "Nueva reserva" : `Editar — ${modal.data.id}`}
+          title={modal.mode === "add" ? `Nueva reserva — ${sedeLabel(activeSede)}` : `Editar — ${modal.data.id}`}
           onClose={closeModal}
           size="lg"
         >
@@ -407,6 +497,7 @@ export default function TabReservas() {
                 className={`form-input ${errors.fecha ? "input-error" : ""}`}
                 type="date"
                 value={form.fecha}
+                min={new Date().toISOString().split("T")[0]}
                 onChange={(e) => setField("fecha", e.target.value)}
               />
               {errors.fecha && <span className="form-error">{errors.fecha}</span>}
@@ -468,9 +559,7 @@ export default function TabReservas() {
                       : "Seleccioná una cancha"}
                   </option>
                   {canchasParaSelect.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.nombre} — {LOCALES[c.localId]?.nombre || c.localId}
-                    </option>
+                    <option key={c.id} value={c.id}>{c.nombre}</option>
                   ))}
                 </select>
               )}

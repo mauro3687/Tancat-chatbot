@@ -11,6 +11,13 @@ import "../styles/TabReportes.css";
 
 const PERIODO_OPTS = ["Semana", "Mes", "3 meses", "Todo"];
 
+const pLabel = (p) => ({
+  Semana: "esta semana",
+  Mes: "este mes",
+  "3 meses": "los últimos 3 meses",
+  Todo: "el historial completo",
+}[p] ?? "el período seleccionado");
+
 function exportCSV(data, filename) {
   if (!data.length) return;
   const headers = Object.keys(data[0]).join(",");
@@ -46,6 +53,12 @@ function PeriodoPills({ periodo, setPeriodo }) {
   );
 }
 
+// ── Bloque de análisis textual debajo de cada gráfico ─────────────────────────
+function ChartInsight({ text }) {
+  if (!text) return null;
+  return <div className="rep-chart-insight">{text}</div>;
+}
+
 // ── Histograma de duración de reservas ─────────────────────────────────────
 function HistogramaDuracion({ reservas }) {
   const { filtrado, periodo, setPeriodo } = usePeriodo(reservas);
@@ -65,6 +78,18 @@ function HistogramaDuracion({ reservas }) {
     return Object.entries(counts).map(([duracion, cantidad]) => ({ duracion, cantidad }));
   }, [filtrado]);
 
+  const insight = useMemo(() => {
+    const total = data.reduce((s, d) => s + d.cantidad, 0);
+    if (total === 0) return `Sin turnos con horario definido en ${pLabel(periodo)}.`;
+    const top = data.reduce((max, d) => d.cantidad > max.cantidad ? d : max, data[0]);
+    const topPct = Math.round((top.cantidad / total) * 100);
+    const otros = data.filter((d) => d.duracion !== top.duracion && d.cantidad > 0);
+    const otrosStr = otros.length
+      ? ` Le siguen ${otros.map((d) => `${d.duracion} (${d.cantidad})`).join(", ")}.`
+      : "";
+    return `En ${pLabel(periodo)} se registraron ${total} turnos con horario. Los de ${top.duracion} fueron los más frecuentes: ${top.cantidad} reservas (${topPct}% del total).${otrosStr}`;
+  }, [data, periodo]);
+
   return (
     <div className="rep-card">
       <div className="rep-card-header">
@@ -76,20 +101,21 @@ function HistogramaDuracion({ reservas }) {
       </div>
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.08)" />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
           <XAxis dataKey="duracion" tick={{ fontSize: 12 }} />
           <YAxis allowDecimals={false} tick={{ fontSize: 11 }} label={{ value: "Turnos", angle: -90, position: "insideLeft", fontSize: 11 }} />
           <Tooltip formatter={(v) => [`${v} turnos`, "Cantidad"]} contentStyle={{ fontSize: 12 }} />
-          <Bar dataKey="cantidad" name="Turnos" fill="#378add" radius={[4, 4, 0, 0]}
+          <Bar dataKey="cantidad" name="Turnos" fill="#4D8EF0" radius={[4, 4, 0, 0]}
             label={{ position: "top", fontSize: 12, fontWeight: 600 }} />
         </BarChart>
       </ResponsiveContainer>
+      <ChartInsight text={insight} />
     </div>
   );
 }
 
 // ── Treemap: proporción de reservas por cancha/deporte ─────────────────────
-const TREEMAP_COLORS = ["#1d9e75","#378add","#ef9f27","#9b59b6","#e24b4a","#16a085","#2980b9"];
+const TREEMAP_COLORS = ["#00C49A","#4D8EF0","#F0A030","#A78BFA","#F04D6A","#00C49A","#4D8EF0"];
 
 function CustomTreemapContent({ x, y, width, height, name, value, colorIndex }) {
   if (width < 25 || height < 25) return null;
@@ -123,6 +149,15 @@ function TreemapCanchas({ reservas }) {
       .sort((a, b) => b.value - a.value);
   }, [filtrado]);
 
+  const insight = useMemo(() => {
+    if (data.length === 0) return `Sin reservas activas en ${pLabel(periodo)}.`;
+    const total = data.reduce((s, d) => s + d.value, 0);
+    const top = data[0];
+    const topPct = Math.round((top.value / total) * 100);
+    const second = data[1] ? ` Le sigue ${data[1].name} con ${data[1].value} reservas.` : "";
+    return `En ${pLabel(periodo)}, ${top.name} concentró la mayor demanda con ${top.value} reservas (${topPct}% del total).${second} Se utilizaron ${data.length} espacio${data.length !== 1 ? "s" : ""} en total.`;
+  }, [data, periodo]);
+
   return (
     <div className="rep-card">
       <div className="rep-card-header">
@@ -140,6 +175,7 @@ function TreemapCanchas({ reservas }) {
             content={<CustomTreemapContent />} />
         </ResponsiveContainer>
       )}
+      <ChartInsight text={insight} />
     </div>
   );
 }
@@ -164,15 +200,25 @@ function WaterfallIngresos({ reservas, ventas }) {
     const neto   = brutoReservas + brutoVentas - cancelaciones - gastos;
 
     return [
-      { label: "Res. brutas",    valor: brutoReservas,    tipo: "entrada", acum: brutoReservas },
-      { label: "+ Ventas",       valor: brutoVentas,      tipo: "entrada", acum: brutoReservas + brutoVentas },
-      { label: "− Cancelaciones",valor: -cancelaciones,   tipo: "salida",  acum: brutoReservas + brutoVentas - cancelaciones },
-      { label: "− Gastos (est.)",valor: -gastos,          tipo: "salida",  acum: neto },
-      { label: "Margen neto",    valor: neto,             tipo: "result",  acum: neto },
+      { label: "Res. brutas",     valor: brutoReservas,  tipo: "entrada", acum: brutoReservas },
+      { label: "+ Ventas",        valor: brutoVentas,    tipo: "entrada", acum: brutoReservas + brutoVentas },
+      { label: "− Cancelaciones", valor: -cancelaciones, tipo: "salida",  acum: brutoReservas + brutoVentas - cancelaciones },
+      { label: "− Gastos (est.)", valor: -gastos,        tipo: "salida",  acum: neto },
+      { label: "Margen neto",     valor: neto,           tipo: "result",  acum: neto },
     ];
   }, [resF, ventF]);
 
-  const COLORS = { entrada: "#1d9e75", salida: "#991B1B", result: "#378add" };
+  const insight = useMemo(() => {
+    const bruto = (data[0]?.valor || 0) + (data[1]?.valor || 0);
+    if (bruto === 0) return `Sin ingresos registrados en ${pLabel(periodo)}.`;
+    const neto = data[4]?.acum || 0;
+    const cancelMonto = -(data[2]?.valor || 0);
+    const cancelPct = bruto > 0 ? Math.round((cancelMonto / bruto) * 100) : 0;
+    const f = (n) => `$${Math.round(Math.abs(n)).toLocaleString("es-AR")}`;
+    return `Ingresos brutos en ${pLabel(periodo)}: ${f(bruto)} (${f(data[0].valor)} por reservas + ${f(data[1].valor)} por ventas). Las cancelaciones representaron el ${cancelPct}% del bruto. Margen neto estimado: ${f(neto)}.`;
+  }, [data, periodo]);
+
+  const COLORS = { entrada: "#00C49A", salida: "#F04D6A", result: "#4D8EF0" };
   const fmt    = (n) => `$${Math.abs(n).toLocaleString("es-AR")}`;
 
   return (
@@ -186,7 +232,7 @@ function WaterfallIngresos({ reservas, ventas }) {
       </div>
       <ResponsiveContainer width="100%" height={230}>
         <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.08)" />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
           <XAxis dataKey="label" tick={{ fontSize: 11 }} />
           <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11 }} />
           <Tooltip
@@ -200,12 +246,13 @@ function WaterfallIngresos({ reservas, ventas }) {
         </BarChart>
       </ResponsiveContainer>
       <div className="wf-legend">
-        {[{ color: "#1d9e75", label: "Entrada" }, { color: "#991B1B", label: "Deducción" }, { color: "#378add", label: "Resultado" }].map(({ color, label }) => (
+        {[{ color: "#00C49A", label: "Entrada" }, { color: "#F04D6A", label: "Deducción" }, { color: "#4D8EF0", label: "Resultado" }].map(({ color, label }) => (
           <span key={label} className="wf-legend-item">
             <span className="wf-dot" style={{ background: color }} />{label}
           </span>
         ))}
       </div>
+      <ChartInsight text={insight} />
     </div>
   );
 }
@@ -225,7 +272,6 @@ function RadarCanchas({ reservas }) {
       else c.ingresos += Number(r.monto) || 0;
     });
 
-    // Normalizar a 0-100
     const maxRes = Math.max(...Object.values(canchaMap).map((c) => c.reservas), 1);
     const maxIng = Math.max(...Object.values(canchaMap).map((c) => c.ingresos), 1);
 
@@ -237,14 +283,27 @@ function RadarCanchas({ reservas }) {
     }));
   }, [reservas]);
 
-  // Formato para recharts radar: needs subject + one key per cancha
+  const insight = useMemo(() => {
+    if (data.length === 0) return "Sin datos de canchas para comparar.";
+    const topOcup = data.reduce((max, c) => c.Ocupación > max.Ocupación ? c : max, data[0]);
+    const topConf = data.reduce((max, c) => c.Confiabilidad > max.Confiabilidad ? c : max, data[0]);
+    const topIng  = data.reduce((max, c) => c.Ingresos > max.Ingresos ? c : max, data[0]);
+    const parts = [`${topOcup.cancha} tuvo la mayor ocupación relativa del período.`];
+    if (topConf.cancha !== topOcup.cancha)
+      parts.push(`${topConf.cancha} lideró en confiabilidad (menor tasa de cancelaciones).`);
+    if (topIng.cancha !== topOcup.cancha)
+      parts.push(`${topIng.cancha} generó los mayores ingresos relativos.`);
+    parts.push("Los valores están normalizados al 100% del máximo registrado por categoría.");
+    return parts.join(" ");
+  }, [data]);
+
   const radarData = [
     { subject: "Ocupación",     ...Object.fromEntries(data.map((c) => [c.cancha, c.Ocupación]))     },
     { subject: "Ingresos",      ...Object.fromEntries(data.map((c) => [c.cancha, c.Ingresos]))      },
     { subject: "Confiabilidad", ...Object.fromEntries(data.map((c) => [c.cancha, c.Confiabilidad])) },
   ];
 
-  const colors = ["#1d9e75","#378add","#ef9f27","#9b59b6","#e24b4a","#16a085","#2980b9"];
+  const colors = ["#00C49A","#4D8EF0","#F0A030","#A78BFA","#F04D6A","#00C49A","#4D8EF0"];
 
   return (
     <div className="rep-card">
@@ -267,6 +326,7 @@ function RadarCanchas({ reservas }) {
           <Tooltip contentStyle={{ fontSize: 12 }} />
         </RadarChart>
       </ResponsiveContainer>
+      <ChartInsight text={insight} />
     </div>
   );
 }
@@ -274,20 +334,33 @@ function RadarCanchas({ reservas }) {
 // ── Gauge: % cumplimiento de meta de ocupación ─────────────────────────────
 function GaugeOcupacion({ reservas }) {
   const { pct, meta } = useMemo(() => {
-    const metaMensual = 7 * 14 * CANCHAS.length * 0.60; // 60% de slots del mes = meta
+    const metaMensual = 7 * 14 * CANCHAS.length * 0.60;
     const now  = new Date();
     const mes  = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const enMes = reservas.filter((r) => r.fecha?.startsWith(mes) && r.estado !== "Cancelada").length;
     return { pct: Math.min(100, Math.round((enMes / metaMensual) * 100)), meta: Math.round(metaMensual) };
   }, [reservas]);
 
-  // SVG gauge manual (semicírculo)
+  const insight = useMemo(() => {
+    if (pct === 0) return `Sin reservas confirmadas en el mes actual. La meta de ocupación es de ${meta} turnos mensuales.`;
+    const estado = pct >= 80
+      ? "La meta mensual se está cumpliendo correctamente"
+      : pct >= 50
+      ? "Se está avanzando hacia la meta mensual"
+      : "El nivel de ocupación está por debajo del objetivo mensual";
+    const now2 = new Date();
+    const diasEnMes  = new Date(now2.getFullYear(), now2.getMonth() + 1, 0).getDate();
+    const diaActual  = now2.getDate();
+    const proyeccion = diaActual > 0 ? Math.min(150, Math.round((pct / diaActual) * diasEnMes)) : pct;
+    return `${estado} con un ${pct}% alcanzado (meta: ${meta} turnos). A este ritmo, se proyecta cerrar el mes en torno al ${proyeccion}% de la meta.`;
+  }, [pct, meta]);
+
   const radius = 70;
   const cx     = 90;
   const cy     = 90;
-  const circum = Math.PI * radius;   // semicírculo
+  const circum = Math.PI * radius;
   const offset = circum - (pct / 100) * circum;
-  const color  = pct >= 80 ? "#1d9e75" : pct >= 50 ? "#ef9f27" : "#991B1B";
+  const color  = pct >= 80 ? "#00C49A" : pct >= 50 ? "#F0A030" : "#F04D6A";
 
   return (
     <div className="rep-card gauge-card">
@@ -299,30 +372,28 @@ function GaugeOcupacion({ reservas }) {
       </div>
       <div className="gauge-wrap">
         <svg viewBox="0 0 180 100" className="gauge-svg">
-          {/* Track */}
           <path d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
-            fill="none" stroke="rgba(0,0,0,0.08)" strokeWidth="14" strokeLinecap="round" />
-          {/* Fill */}
+            fill="none" stroke="rgba(255,255,255,0.10)" strokeWidth="14" strokeLinecap="round" />
           <path d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
             fill="none" stroke={color} strokeWidth="14" strokeLinecap="round"
             strokeDasharray={`${circum} ${circum}`}
             strokeDashoffset={offset}
             style={{ transition: "stroke-dashoffset 0.8s ease, stroke 0.4s" }}
           />
-          {/* Valor */}
           <text x={cx} y={cy - 4} textAnchor="middle" fontSize="28" fontWeight="800" fill={color}>{pct}%</text>
-          <text x={cx} y={cy + 14} textAnchor="middle" fontSize="10" fill="var(--text-muted, #888)">de la meta</text>
-          <text x={cx - radius} cy={cy + 18} textAnchor="middle" fontSize="10" fill="var(--text-muted, #888)">0%</text>
-          <text x={cx + radius} cy={cy + 18} textAnchor="middle" fontSize="10" fill="var(--text-muted, #888)">100%</text>
+          <text x={cx} y={cy + 14} textAnchor="middle" fontSize="10" fill="#8B92A8">de la meta</text>
+          <text x={cx - radius} y={cy + 18} textAnchor="middle" fontSize="10" fill="#8B92A8">0%</text>
+          <text x={cx + radius} y={cy + 18} textAnchor="middle" fontSize="10" fill="#8B92A8">100%</text>
         </svg>
         <div className="gauge-legend">
-          {[["≥80%", "#1d9e75", "Meta alcanzada"], ["50–79%", "#ef9f27", "En progreso"], ["<50%", "#991B1B", "Por debajo"]].map(([r, c, l]) => (
+          {[["≥80%", "#00C49A", "Meta alcanzada"], ["50–79%", "#F0A030", "En progreso"], ["<50%", "#F04D6A", "Por debajo"]].map(([r, c, l]) => (
             <span key={l} className="gauge-item">
               <span className="gauge-dot" style={{ background: c }} />{r} — {l}
             </span>
           ))}
         </div>
       </div>
+      <ChartInsight text={insight} />
     </div>
   );
 }
@@ -345,7 +416,7 @@ function AreaIngresosCategoria({ reservas, ventas }) {
       const hasta  = new Date(now); hasta.setDate(now.getDate() - semIdx * 7);
       const ds = desde.toISOString().split("T")[0];
       const hs = hasta.toISOString().split("T")[0];
-      const sem = resF.filter((r) => r.fecha >= ds && r.fecha <= hs && r.estado !== "Cancelada");
+      const sem  = resF.filter((r) => r.fecha >= ds && r.fecha <= hs && r.estado !== "Cancelada");
       const semV = ventF.filter((v) => (v.fecha ?? "") >= ds && (v.fecha ?? "") <= hs);
       return {
         semana:  `S${6 - i}`,
@@ -356,6 +427,27 @@ function AreaIngresosCategoria({ reservas, ventas }) {
       };
     });
   }, [resF, ventF]);
+
+  const insight = useMemo(() => {
+    const totales = { Pádel: 0, Básquet: 0, Vóley: 0, Ventas: 0 };
+    data.forEach((w) => {
+      totales.Pádel   += w.Pádel;
+      totales.Básquet += w.Básquet;
+      totales.Vóley   += w.Vóley;
+      totales.Ventas  += w.Ventas;
+    });
+    const totalGen = Object.values(totales).reduce((s, v) => s + v, 0);
+    if (totalGen === 0) return `Sin ingresos registrados en las últimas 6 semanas para ${pLabel(periodo)}.`;
+    const top = Object.entries(totales).sort((a, b) => b[1] - a[1])[0];
+    const rowTotal = (w) => w.Pádel + w.Básquet + w.Vóley + w.Ventas;
+    const semMasActiva = data.reduce((max, s) => rowTotal(s) > rowTotal(max) ? s : max, data[0]);
+    const last = data[data.length - 1];
+    const prev = data[data.length - 2];
+    const tendencia = prev
+      ? (rowTotal(last) > rowTotal(prev) ? "tendencia alcista" : rowTotal(last) < rowTotal(prev) ? "tendencia bajista" : "estabilidad")
+      : "sin comparación";
+    return `${top[0]} lideró la generación de ingresos con $${top[1]}K acumulados en las últimas 6 semanas. La semana más activa fue ${semMasActiva.semana} con $${rowTotal(semMasActiva)}K en total. La última semana muestra ${tendencia} respecto a la anterior.`;
+  }, [data, periodo]);
 
   return (
     <div className="rep-card">
@@ -368,17 +460,253 @@ function AreaIngresosCategoria({ reservas, ventas }) {
       </div>
       <ResponsiveContainer width="100%" height={230}>
         <AreaChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.08)" />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
           <XAxis dataKey="semana" tick={{ fontSize: 12 }} />
           <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}K`} />
           <Tooltip formatter={(v) => [`$${v}K`, ""]} contentStyle={{ fontSize: 12 }} />
           <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
-          <Area type="monotone" dataKey="Pádel"   stackId="1" stroke="#1d9e75" fill="#1d9e7533" />
-          <Area type="monotone" dataKey="Básquet" stackId="1" stroke="#378add" fill="#378add33" />
-          <Area type="monotone" dataKey="Vóley"   stackId="1" stroke="#ef9f27" fill="#ef9f2733" />
-          <Area type="monotone" dataKey="Ventas"  stackId="1" stroke="#9b59b6" fill="#9b59b633" />
+          <Area type="monotone" dataKey="Pádel"   stackId="1" stroke="#00C49A" fill="#00C49A22" />
+          <Area type="monotone" dataKey="Básquet" stackId="1" stroke="#4D8EF0" fill="#4D8EF022" />
+          <Area type="monotone" dataKey="Vóley"   stackId="1" stroke="#F0A030" fill="#F0A03022" />
+          <Area type="monotone" dataKey="Ventas"  stackId="1" stroke="#A78BFA" fill="#A78BFA22" />
         </AreaChart>
       </ResponsiveContainer>
+      <ChartInsight text={insight} />
+    </div>
+  );
+}
+
+// ── Turnos por día de la semana ─────────────────────────────────────────────
+const DIAS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+
+function TurnosPorDia({ reservas }) {
+  const { filtrado, periodo, setPeriodo } = usePeriodo(reservas);
+
+  const data = useMemo(() => {
+    const counts = DIAS.map((dia) => ({ dia, turnos: 0, ingresos: 0 }));
+    filtrado.filter((r) => r.estado !== "Cancelada" && r.fecha).forEach((r) => {
+      const idx = (new Date(r.fecha + "T12:00:00").getDay() + 6) % 7; // 0=Lun
+      counts[idx].turnos++;
+      counts[idx].ingresos += Number(r.monto) || 0;
+    });
+    return counts;
+  }, [filtrado]);
+
+  const insight = useMemo(() => {
+    const total = data.reduce((s, d) => s + d.turnos, 0);
+    if (total === 0) return `Sin reservas activas en ${pLabel(periodo)}.`;
+    const top  = data.reduce((max, d) => d.turnos > max.turnos ? d : max, data[0]);
+    const low  = data.filter((d) => d.turnos > 0).reduce((min, d) => d.turnos < min.turnos ? d : min, data.find((d) => d.turnos > 0) ?? data[0]);
+    const fds  = data[5].turnos + data[6].turnos;
+    const fdsPct = Math.round((fds / total) * 100);
+    return `En ${pLabel(periodo)}, ${top.dia} fue el día más activo con ${top.turnos} turnos. ${low.dia} registró la menor actividad (${low.turnos} turnos). El fin de semana concentró el ${fdsPct}% de la demanda total.`;
+  }, [data, periodo]);
+
+  return (
+    <div className="rep-card">
+      <div className="rep-card-header">
+        <div>
+          <div className="rep-card-title">Turnos por día de la semana</div>
+          <div className="rep-card-sub">¿Qué días concentran más reservas?</div>
+        </div>
+        <PeriodoPills periodo={periodo} setPeriodo={setPeriodo} />
+      </div>
+      <ResponsiveContainer width="100%" height={220}>
+        <BarChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+          <XAxis dataKey="dia" tick={{ fontSize: 12 }} />
+          <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+          <Tooltip formatter={(v) => [`${v} turnos`, "Reservas"]} contentStyle={{ fontSize: 12 }} />
+          <Bar dataKey="turnos" name="Turnos" radius={[4, 4, 0, 0]}>
+            {data.map((entry, i) => (
+              <Cell key={i} fill={i >= 5 ? "#A78BFA" : "#00C49A"} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+      <ChartInsight text={insight} />
+    </div>
+  );
+}
+
+// ── Top clientes por frecuencia ─────────────────────────────────────────────
+function TopClientes({ reservas, clientes }) {
+  const { filtrado, periodo, setPeriodo } = usePeriodo(reservas);
+
+  const data = useMemo(() => {
+    const counts = {};
+    filtrado.filter((r) => r.estado !== "Cancelada" && r.clienteId).forEach((r) => {
+      counts[r.clienteId] = (counts[r.clienteId] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([id, cantidad]) => {
+        const cl = clientes.find((c) => c.id === id);
+        return { nombre: cl?.nombre ?? cl?.name ?? id.slice(0, 8), cantidad };
+      });
+  }, [filtrado, clientes]);
+
+  const insight = useMemo(() => {
+    if (data.length === 0) return `Sin reservas con cliente asignado en ${pLabel(periodo)}.`;
+    const top = data[0];
+    const totalClientes = data.length;
+    const totalTurnos = data.reduce((s, d) => s + d.cantidad, 0);
+    const topPct = Math.round((top.cantidad / totalTurnos) * 100);
+    return `En ${pLabel(periodo)}, ${top.nombre} fue el cliente más frecuente con ${top.cantidad} reservas (${topPct}% del top ${totalClientes}). Los ${totalClientes} clientes más activos acumularon ${totalTurnos} turnos en conjunto.`;
+  }, [data, periodo]);
+
+  return (
+    <div className="rep-card">
+      <div className="rep-card-header">
+        <div>
+          <div className="rep-card-title">Clientes más frecuentes</div>
+          <div className="rep-card-sub">Top 8 por cantidad de reservas en el período</div>
+        </div>
+        <PeriodoPills periodo={periodo} setPeriodo={setPeriodo} />
+      </div>
+      {data.length === 0 ? (
+        <div className="rep-empty">Sin datos de clientes en el período</div>
+      ) : (
+        <ResponsiveContainer width="100%" height={Math.max(180, data.length * 36)}>
+          <BarChart layout="vertical" data={data} margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
+            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(255,255,255,0.06)" />
+            <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+            <YAxis type="category" dataKey="nombre" width={110} tick={{ fontSize: 11 }} />
+            <Tooltip formatter={(v) => [`${v} reservas`, "Cantidad"]} contentStyle={{ fontSize: 12 }} />
+            <Bar dataKey="cantidad" name="Reservas" fill="#4D8EF0" radius={[0, 4, 4, 0]}>
+              {data.map((_, i) => <Cell key={i} fill={i === 0 ? "#00C49A" : "#4D8EF0"} />)}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      )}
+      <ChartInsight text={insight} />
+    </div>
+  );
+}
+
+// ── Tasa de cancelación por cancha ──────────────────────────────────────────
+function CancelacionesPorCancha({ reservas }) {
+  const { filtrado, periodo, setPeriodo } = usePeriodo(reservas);
+
+  const data = useMemo(() => {
+    const map = {};
+    filtrado.forEach((r) => {
+      const k = r.cancha || r.deporte || "Sin asignar";
+      if (!map[k]) map[k] = { total: 0, canceladas: 0 };
+      map[k].total++;
+      if (r.estado === "Cancelada") map[k].canceladas++;
+    });
+    return Object.entries(map)
+      .map(([cancha, { total, canceladas }]) => ({
+        cancha,
+        total,
+        canceladas,
+        tasa: total > 0 ? Math.round((canceladas / total) * 100) : 0,
+      }))
+      .sort((a, b) => b.tasa - a.tasa);
+  }, [filtrado]);
+
+  const insight = useMemo(() => {
+    if (data.length === 0) return `Sin reservas en ${pLabel(periodo)}.`;
+    const top  = data[0];
+    const best = data[data.length - 1];
+    const promedio = data.length > 0 ? Math.round(data.reduce((s, d) => s + d.tasa, 0) / data.length) : 0;
+    if (top.tasa === 0) return `Ninguna cancha registró cancelaciones en ${pLabel(periodo)}. Excelente retención.`;
+    return `En ${pLabel(periodo)}, ${top.cancha} tuvo la mayor tasa de cancelaciones (${top.tasa}% de sus ${top.total} reservas). ${best.cancha} fue la más confiable con solo ${best.tasa}% de cancelaciones. La tasa promedio del complejo fue ${promedio}%.`;
+  }, [data, periodo]);
+
+  return (
+    <div className="rep-card">
+      <div className="rep-card-header">
+        <div>
+          <div className="rep-card-title">Tasa de cancelación por cancha</div>
+          <div className="rep-card-sub">% de reservas canceladas sobre el total</div>
+        </div>
+        <PeriodoPills periodo={periodo} setPeriodo={setPeriodo} />
+      </div>
+      {data.length === 0 ? (
+        <div className="rep-empty">Sin datos en el período</div>
+      ) : (
+        <ResponsiveContainer width="100%" height={Math.max(180, data.length * 40)}>
+          <BarChart layout="vertical" data={data} margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
+            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(255,255,255,0.06)" />
+            <XAxis type="number" unit="%" domain={[0, 100]} tick={{ fontSize: 11 }} />
+            <YAxis type="category" dataKey="cancha" width={110} tick={{ fontSize: 11 }} />
+            <Tooltip
+              formatter={(v, name, props) => [`${v}% (${props.payload.canceladas}/${props.payload.total})`, "Cancelaciones"]}
+              contentStyle={{ fontSize: 12 }}
+            />
+            <Bar dataKey="tasa" name="% Cancelación" radius={[0, 4, 4, 0]}>
+              {data.map((entry, i) => (
+                <Cell key={i} fill={entry.tasa >= 30 ? "#F04D6A" : entry.tasa >= 15 ? "#F0A030" : "#00C49A"} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      )}
+      <ChartInsight text={insight} />
+    </div>
+  );
+}
+
+// ── Reservas por franja horaria ─────────────────────────────────────────────
+const FRANJAS = ["08–10", "10–12", "12–14", "14–16", "16–18", "18–20", "20–22"];
+
+function ReservasPorHora({ reservas }) {
+  const { filtrado, periodo, setPeriodo } = usePeriodo(reservas);
+
+  const data = useMemo(() => {
+    const counts = FRANJAS.map((franja) => ({ franja, turnos: 0, ingresos: 0 }));
+    filtrado.filter((r) => r.estado !== "Cancelada" && r.horario).forEach((r) => {
+      const horaStr = r.horario.split("—")[0].trim();
+      const hora = parseInt(horaStr);
+      const idx  = Math.floor((hora - 8) / 2);
+      if (idx >= 0 && idx < counts.length) {
+        counts[idx].turnos++;
+        counts[idx].ingresos += Number(r.monto) || 0;
+      }
+    });
+    return counts;
+  }, [filtrado]);
+
+  const insight = useMemo(() => {
+    const total = data.reduce((s, d) => s + d.turnos, 0);
+    if (total === 0) return `Sin reservas con horario definido en ${pLabel(periodo)}.`;
+    const top = data.reduce((max, d) => d.turnos > max.turnos ? d : max, data[0]);
+    const topPct = Math.round((top.turnos / total) * 100);
+    const tarde  = data.slice(3).reduce((s, d) => s + d.turnos, 0);
+    const tardePct = Math.round((tarde / total) * 100);
+    return `La franja ${top.franja}h fue la más demandada en ${pLabel(periodo)} con ${top.turnos} turnos (${topPct}% del total). La tarde-noche (14:00 a 22:00) concentró el ${tardePct}% de todas las reservas.`;
+  }, [data, periodo]);
+
+  return (
+    <div className="rep-card">
+      <div className="rep-card-header">
+        <div>
+          <div className="rep-card-title">Reservas por franja horaria</div>
+          <div className="rep-card-sub">¿A qué hora se usa más el complejo?</div>
+        </div>
+        <PeriodoPills periodo={periodo} setPeriodo={setPeriodo} />
+      </div>
+      <ResponsiveContainer width="100%" height={220}>
+        <BarChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+          <XAxis dataKey="franja" tick={{ fontSize: 11 }} />
+          <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+          <Tooltip formatter={(v) => [`${v} turnos`, "Reservas"]} contentStyle={{ fontSize: 12 }} />
+          <Bar dataKey="turnos" name="Turnos" radius={[4, 4, 0, 0]}>
+            {data.map((entry, i) => (
+              <Cell key={i} fill={
+                i >= 4 ? "#F0A030" :   // tarde-noche: ámbar
+                i >= 2 ? "#00C49A" :   // mediodía: teal
+                "#4D8EF0"              // mañana: azul
+              } />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+      <ChartInsight text={insight} />
     </div>
   );
 }
@@ -397,7 +725,6 @@ async function generarPDF({ reportRef, reservas, ventas, clientes, currentUser, 
     const horaStr  = now.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
     const usuario  = currentUser?.nombre ?? "Admin";
 
-    // Capturar contenido
     const canvas = await html2canvas(reportRef.current, {
       scale: 2,
       useCORS: true,
@@ -406,12 +733,11 @@ async function generarPDF({ reportRef, reservas, ventas, clientes, currentUser, 
       logging: false,
     });
 
-    // Dimensiones A4
     const PDF_W    = 210;
     const PDF_H    = 297;
     const MARGIN   = 12;
-    const HDR_H    = 26;   // altura del header
-    const FTR_H    = 14;   // altura del footer
+    const HDR_H    = 26;
+    const FTR_H    = 14;
     const BODY_H   = PDF_H - HDR_H - FTR_H - MARGIN * 2;
     const BODY_W   = PDF_W - MARGIN * 2;
 
@@ -422,30 +748,21 @@ async function generarPDF({ reportRef, reservas, ventas, clientes, currentUser, 
     const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
     const addHeader = (pg) => {
-      // Fondo header
       pdf.setFillColor(29, 158, 117);
       pdf.rect(0, 0, PDF_W, HDR_H, "F");
-
-      // Logo "TC"
       pdf.setFillColor(255, 255, 255);
       pdf.roundedRect(MARGIN, 5, 16, 16, 2, 2, "F");
       pdf.setTextColor(29, 158, 117);
       pdf.setFontSize(9);
       pdf.setFont("helvetica", "bold");
       pdf.text("TC", MARGIN + 8, 15, { align: "center" });
-
-      // Título
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(13);
       pdf.setFont("helvetica", "bold");
       pdf.text("REPORTE TANCAT v3.0", MARGIN + 22, 11);
-
-      // Subtítulo
       pdf.setFontSize(8);
       pdf.setFont("helvetica", "normal");
       pdf.text("Análisis y gestión del complejo deportivo", MARGIN + 22, 17);
-
-      // Fecha + página
       pdf.setFontSize(8);
       pdf.text(`${fechaStr}  |  Página ${pg} de ${totalPgs}`, PDF_W - MARGIN, 13, { align: "right" });
     };
@@ -455,7 +772,6 @@ async function generarPDF({ reportRef, reservas, ventas, clientes, currentUser, 
       pdf.setDrawColor(200, 200, 200);
       pdf.setLineWidth(0.3);
       pdf.line(MARGIN, y, PDF_W - MARGIN, y);
-
       pdf.setTextColor(120, 120, 120);
       pdf.setFontSize(7.5);
       pdf.setFont("helvetica", "normal");
@@ -464,7 +780,6 @@ async function generarPDF({ reportRef, reservas, ventas, clientes, currentUser, 
       pdf.text(`${fechaStr}  ${horaStr}`, PDF_W - MARGIN, y + 5, { align: "right" });
     };
 
-    // Tabla resumen en página 1 (antes de los gráficos)
     const addTablaResumen = () => {
       const totalVentas    = ventas.reduce((s, v) => s + Number(v.monto || 0), 0);
       const ticketPromedio = ventas.length ? Math.round(totalVentas / ventas.length) : 0;
@@ -472,12 +787,12 @@ async function generarPDF({ reportRef, reservas, ventas, clientes, currentUser, 
       const canceladas     = reservas.filter((r) => r.estado === "Cancelada").length;
 
       const rows = [
-        ["Total de reservas",    reservas.length.toString(),        "u."],
-        ["Reservas confirmadas", confirmadas.toString(),             "u."],
-        ["Reservas canceladas",  canceladas.toString(),              "u."],
-        ["Total clientes",       clientes.length.toString(),         "u."],
-        ["Ingresos totales",     fmt(totalVentas),                   "ARS"],
-        ["Ticket promedio",      fmt(ticketPromedio),                "ARS"],
+        ["Total de reservas",    reservas.length.toString(), "u."],
+        ["Reservas confirmadas", confirmadas.toString(),      "u."],
+        ["Reservas canceladas",  canceladas.toString(),       "u."],
+        ["Total clientes",       clientes.length.toString(),  "u."],
+        ["Ingresos totales",     fmt(totalVentas),            "ARS"],
+        ["Ticket promedio",      fmt(ticketPromedio),         "ARS"],
       ];
 
       let y = HDR_H + MARGIN + 4;
@@ -507,23 +822,16 @@ async function generarPDF({ reportRef, reservas, ventas, clientes, currentUser, 
       return y + rows.length * 8 + 4;
     };
 
-    // ── Generar páginas ──
     for (let pg = 0; pg < totalPgs; pg++) {
       if (pg > 0) pdf.addPage();
-
       addHeader(pg + 1);
       addFooter(pg + 1);
 
       if (pg === 0) {
-        // Tabla resumen en la primera página antes de los gráficos
         const tablaEndY = addTablaResumen();
-
-        // Separador
         pdf.setDrawColor(200, 200, 200);
         pdf.setLineWidth(0.2);
         pdf.line(MARGIN, tablaEndY, PDF_W - MARGIN, tablaEndY);
-
-        // Gráficos: slice de la imagen ajustado al espacio restante
         const availableH  = PDF_H - tablaEndY - FTR_H - MARGIN;
         const srcPixH     = (availableH / imgW) * canvas.width;
         const sliceCanvas = document.createElement("canvas");
@@ -532,21 +840,15 @@ async function generarPDF({ reportRef, reservas, ventas, clientes, currentUser, 
         sliceCanvas.getContext("2d").drawImage(canvas, 0, 0, canvas.width, sliceCanvas.height, 0, 0, canvas.width, sliceCanvas.height);
         pdf.addImage(sliceCanvas.toDataURL("image/png"), "PNG", MARGIN, tablaEndY + 2, imgW, availableH);
       } else {
-        // Páginas siguientes: resto de los gráficos
-        const startY  = pg === 1
-          ? 0  // continúa donde terminó la página 1 (aproximado)
-          : (pg - 1) * BODY_H;
+        const startY  = pg === 1 ? 0 : (pg - 1) * BODY_H;
         const srcPxPerMm = canvas.width / imgW;
         const srcY    = Math.round(startY * srcPxPerMm);
         const srcH    = Math.round(BODY_H * srcPxPerMm);
-
         if (srcY >= canvas.height) break;
-
         const sliceCanvas = document.createElement("canvas");
         sliceCanvas.width  = canvas.width;
         sliceCanvas.height = Math.min(srcH, canvas.height - srcY);
         sliceCanvas.getContext("2d").drawImage(canvas, 0, srcY, canvas.width, sliceCanvas.height, 0, 0, canvas.width, sliceCanvas.height);
-
         const sliceH = (sliceCanvas.height / canvas.width) * imgW;
         pdf.addImage(sliceCanvas.toDataURL("image/png"), "PNG", MARGIN, HDR_H + MARGIN, imgW, sliceH);
       }
@@ -596,22 +898,7 @@ export default function TabReportes() {
         </div>
       </div>
 
-      {/* Todo lo que va al PDF está dentro de este ref */}
       <div ref={reportRef}>
-        {/* KPIs resumen */}
-        <div className="kpi-grid kpi-grid-4">
-          {[
-            { label: "Total reservas",   val: reservas.length },
-            { label: "Ingresos totales", val: fmt(totalVentas) },
-            { label: "Clientes activos", val: clientes.length },
-            { label: "Ticket promedio",  val: fmt(ticketPromedio) },
-          ].map((m) => (
-            <div key={m.label} className="kpi-card">
-              <div className="metric-label">{m.label}</div>
-              <div className="kpi-value">{m.val}</div>
-            </div>
-          ))}
-        </div>
 
         {/* Fila 1: histograma duración + treemap canchas */}
         <div className="rep-charts-grid">
@@ -621,7 +908,7 @@ export default function TabReportes() {
 
         {/* Fila 2: waterfall ingresos + área apilada */}
         <div className="rep-charts-grid">
-          <WaterfallIngresos reservas={reservas} ventas={ventas} />
+          <WaterfallIngresos     reservas={reservas} ventas={ventas} />
           <AreaIngresosCategoria reservas={reservas} ventas={ventas} />
         </div>
 
@@ -629,6 +916,18 @@ export default function TabReportes() {
         <div className="rep-charts-grid">
           <RadarCanchas   reservas={reservas} />
           <GaugeOcupacion reservas={reservas} />
+        </div>
+
+        {/* Fila 4: turnos por día + reservas por franja horaria */}
+        <div className="rep-charts-grid">
+          <TurnosPorDia        reservas={reservas} />
+          <ReservasPorHora     reservas={reservas} />
+        </div>
+
+        {/* Fila 5: top clientes + cancelaciones por cancha */}
+        <div className="rep-charts-grid">
+          <TopClientes         reservas={reservas} clientes={clientes} />
+          <CancelacionesPorCancha reservas={reservas} />
         </div>
       </div>
     </div>

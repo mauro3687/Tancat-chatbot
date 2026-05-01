@@ -1,5 +1,5 @@
 // src/components/TabConfiguracion.jsx — Configuración de la empresa
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useStore } from "../data/store.jsx";
 import { DEPORTES } from "../data/canchas.js";
 import { Mail, Phone, Clock } from "lucide-react";
@@ -10,8 +10,18 @@ const DEPORTE_LABEL = { padel: "Pádel", basquet: "Básquet", voley: "Voley" };
 export default function TabConfiguracion() {
   const { config, updateConfig, currentUser } = useStore();
   const readOnly = currentUser?.rol === "encargado";
-  const [form, setForm] = useState({ ...config });
-  const [saved, setSaved] = useState(false);
+  const [form, setForm]     = useState({ ...config });
+  const [saved, setSaved]   = useState(false);
+  const [priceErrors, setPriceErrors] = useState({});
+  // BUG-021: sincronizar form cuando config llega desde Firestore (solo la primera vez)
+  const hasSynced = useRef(false);
+  useEffect(() => {
+    if (!hasSynced.current && config && Object.keys(config).length > 0) {
+      hasSynced.current = true;
+      setForm({ ...config });
+    }
+  }, [config]);
+
   const setField = (k, v) => { if (!readOnly) setForm((f) => ({ ...f, [k]: v })); };
   const setPrecio = (dep, v) => {
     if (!readOnly)
@@ -19,6 +29,14 @@ export default function TabConfiguracion() {
   };
 
   const handleSave = () => {
+    // BUG-019: validar que todos los precios sean > 0
+    const pe = {};
+    const precios = form.precios || {};
+    DEPORTES.forEach((dep) => {
+      if (!precios[dep] || precios[dep] <= 0) pe[dep] = "Debe ser mayor a $0";
+    });
+    if (Object.keys(pe).length > 0) { setPriceErrors(pe); return; }
+    setPriceErrors({});
     updateConfig(form);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
@@ -100,17 +118,18 @@ export default function TabConfiguracion() {
                 {DEPORTE_LABEL[dep]} — precio por hora ($)
               </label>
               <input
-                className="form-input"
+                className={`form-input ${priceErrors[dep] ? "input-error" : ""}`}
                 type="number"
-                min="0"
+                min="1"
                 step="500"
                 value={precios[dep] ?? 0}
-                onChange={(e) => setPrecio(dep, e.target.value)}
+                onChange={(e) => { setPrecio(dep, e.target.value); setPriceErrors((pe) => ({ ...pe, [dep]: undefined })); }}
                 disabled={readOnly}
               />
-              <span className="form-hint">
-                Reserva 2 hs = {new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format((precios[dep] ?? 0) * 2)}
-              </span>
+              {priceErrors[dep]
+                ? <span className="form-error">{priceErrors[dep]}</span>
+                : <span className="form-hint">Reserva 2 hs = {new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format((precios[dep] ?? 0) * 2)}</span>
+              }
             </div>
           ))}
         </div>

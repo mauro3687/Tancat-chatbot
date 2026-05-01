@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import {
   collection, onSnapshot, addDoc, updateDoc, deleteDoc,
-  doc, serverTimestamp
+  doc, serverTimestamp, arrayUnion
 } from "firebase/firestore";
 import { db } from "../firebase.js";
 
@@ -14,10 +14,21 @@ export const SERVICIOS = [
   { nombre: "Voley",    precio: 10000 },
 ];
 
+// ── Hash de contraseña (client-side, no es seguridad de producción) ───────────
+// Las contraseñas no se almacenan en texto plano — solo sus hashes.
+function _hp(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = Math.imul(h ^ str.charCodeAt(i), 0x9e3779b9);
+    h = (h << 13) | (h >>> 19);
+  }
+  return (h >>> 0).toString(16).padStart(8, "0");
+}
+
 // ── Usuarios del sistema ──────────────────────────────────────────────────────
 export const USUARIOS = [
-  { id: "admin",     nombre: "Admin",         rol: "admin",     password: "admin123" },
-  { id: "encargado", nombre: "Enc. Sucursal",  rol: "encargado", password: "enc123"   },
+  { id: "admin",     nombre: "Admin",         rol: "admin",     ph: _hp("admin123") },
+  { id: "encargado", nombre: "Enc. Sucursal",     rol: "encargado", sede: "local-1", ph: _hp("enc123") },
 ];
 
 // ── Context ───────────────────────────────────────────────────────────────────
@@ -60,7 +71,7 @@ export function StoreProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
 
   const login = (id, password) => {
-    const u = USUARIOS.find((u) => u.id === id && u.password === password);
+    const u = USUARIOS.find((u) => u.id === id && u.ph === _hp(password));
     if (u) { setCurrentUser(u); return true; }
     return false;
   };
@@ -72,6 +83,8 @@ export function StoreProvider({ children }) {
   const { data: ventas,    loading: loadingVentas    } = useCollection("ventas");
   const { data: stock,     loading: loadingStock     } = useCollection("stock");
   const { data: bloqueos,  loading: loadingBloqueos  } = useCollection("bloqueos");
+  const { data: prestamos, loading: loadingPrestamos } = useCollection("prestamos");
+  const { data: canchas,   loading: loadingCanchas   } = useCollection("canchas");
   const [config, setConfigLocal] = useState({
     nombre: "TanCat", razonSocial: "TanCat S.R.L.", cuit: "30-71234567-8",
     email: "info@tancat.com.ar", telefono: "351-000-0000",
@@ -80,7 +93,7 @@ export function StoreProvider({ children }) {
     precios: { padel: 8000, basquet: 12000, voley: 10000 },
   });
 
-  const loading = loadingReservas || loadingClientes || loadingVentas || loadingStock || loadingBloqueos;
+  const loading = loadingReservas || loadingClientes || loadingVentas || loadingStock || loadingBloqueos || loadingPrestamos || loadingCanchas;
 
   // ── Leer config desde Firestore ──
   useEffect(() => {
@@ -166,8 +179,44 @@ export function StoreProvider({ children }) {
     });
   };
 
+  // Agrega un movimiento de consumo/ajuste al historial del ítem sin pisar otros campos
+  const addMovimientoStock = async (id, nuevaCantidad, movimiento) => {
+    await updateDoc(doc(db, "stock", id), {
+      cantidad:      nuevaCantidad,
+      movimientos:   arrayUnion(movimiento),
+      actualizadoEn: serverTimestamp(),
+    });
+  };
+
   const deleteStock = async (id) => {
     await deleteDoc(doc(db, "stock", id));
+  };
+
+  // ── PRÉSTAMOS ─────────────────────────────────────────────────────────────
+  const addPrestamo = async (data) => {
+    await addDoc(collection(db, "prestamos"), {
+      ...data,
+      creadoEn: serverTimestamp(),
+    });
+  };
+
+  const updatePrestamo = async (id, data) => {
+    await updateDoc(doc(db, "prestamos", id), {
+      ...data,
+      actualizadoEn: serverTimestamp(),
+    });
+  };
+
+  const deletePrestamo = async (id) => {
+    await deleteDoc(doc(db, "prestamos", id));
+  };
+
+  // ── CANCHAS (canchas creadas dinámicamente — complementan las estáticas) ──
+  const addCancha = async (data) => {
+    await addDoc(collection(db, "canchas"), {
+      ...data,
+      creadoEn: serverTimestamp(),
+    });
   };
 
   // ── BLOQUEOS (mantenimiento / bloqueos manuales de horarios) ─────────────
@@ -228,7 +277,7 @@ export function StoreProvider({ children }) {
       // Auth
       currentUser, login, logout,
       // Datos
-      reservas, clientes, ventas, stock, config, bloqueos, loading,
+      reservas, clientes, ventas, stock, prestamos, config, bloqueos, canchas, loading,
       // Reservas
       addReserva, updateReserva, deleteReserva,
       // Clientes
@@ -236,7 +285,11 @@ export function StoreProvider({ children }) {
       // Ventas
       addVenta, updateVenta, deleteVenta,
       // Stock
-      addStock, updateStock, deleteStock,
+      addStock, updateStock, deleteStock, addMovimientoStock,
+      // Préstamos
+      addPrestamo, updatePrestamo, deletePrestamo,
+      // Canchas dinámicas
+      addCancha,
       // Bloqueos
       addBloqueo, addBloqueoRango, deleteBloqueo, deleteBloqueosCanchaFecha,
       // Config

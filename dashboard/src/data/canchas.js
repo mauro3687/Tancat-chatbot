@@ -1,8 +1,8 @@
 // src/data/canchas.js — Estructura de locales, canchas y horarios
 
 export const LOCALES = {
-  "local-1": { nombre: "TanCat — Local Centro", direccion: "Av. Colón 1234, Córdoba" },
-  "local-2": { nombre: "TanCat — Local Norte",  direccion: "Ruta 36 Km 45, Córdoba" },
+  "local-1": { nombre: "TanCat — Local Jacinto Ríos", direccion: "Av. Colón 1234, Córdoba" },
+  "local-2": { nombre: "TanCat — Local Rincón",       direccion: "Ruta 36 Km 45, Córdoba" },
 };
 
 export const CANCHAS = [
@@ -29,12 +29,27 @@ export const HORARIOS = Array.from({ length: 14 }, (_, i) => {
 export const PRECIOS = { padel: 8000, basquet: 12000, voley: 10000 };
 export const SENA_PCT = 0.30;
 
-// Dado deporte + fecha + horario, devuelve la primer cancha libre
+// Parsea un horario "HH:00 — HH:00" y devuelve { inicio, fin } en horas enteras
+function parseRango(horario) {
+  if (!horario) return null;
+  const parts = horario.split("—").map((s) => parseInt(s.trim()));
+  if (parts.length < 2 || isNaN(parts[0]) || isNaN(parts[1])) return null;
+  return { inicio: parts[0], fin: parts[1] };
+}
+
+// Dado deporte + fecha + horario, devuelve la primer cancha libre.
+// Usa comparación de rangos para detectar solapamiento correctamente.
 export function asignarCancha(reservas, deporte, fecha, horario) {
   const canchasDeporte = CANCHAS.filter((c) => c.deporte === deporte);
+  const rango = parseRango(horario);
   const ocupadas = new Set(
     reservas
-      .filter((r) => r.deporte === deporte && r.fecha === fecha && r.horario === horario && r.estado !== "Cancelada")
+      .filter((r) => {
+        if (r.deporte !== deporte || r.fecha !== fecha || r.estado === "Cancelada") return false;
+        if (!rango) return r.horario === horario;
+        const ex = parseRango(r.horario);
+        return ex && ex.inicio < rango.fin && ex.fin > rango.inicio;
+      })
       .map((r) => r.canchaId)
   );
   return canchasDeporte.find((c) => !ocupadas.has(c.id)) || null;

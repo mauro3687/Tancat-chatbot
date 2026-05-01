@@ -12,13 +12,14 @@ import {
 } from "lucide-react";
 import "../styles/TabIA.css";
 
-// ── Paleta de cards ──────────────────────────────────────────────────────────
+// ── Paleta de cards — variantes oscuras, coherentes con el tema dark ────────
+// Todos usan rgba de baja opacidad sobre #161922 (bg-card del sistema).
 const COLOR_MAP = {
-  verde:   { bg: "var(--green-light,#E1F5EE)", text: "var(--green-dark,#085041)", border: "#1D9E75" },
-  azul:    { bg: "var(--blue-light,#E6F1FB)",  text: "var(--azul-dark,#0C447C)",  border: "#378ADD" },
-  ambar:   { bg: "#FAEEDA",                    text: "#633806",                   border: "#EF9F27" },
-  rojo:    { bg: "var(--red-light,#FCEBEB)",   text: "#791F1F",                   border: "#E24B4A" },
-  purpura: { bg: "#F3EFFE",                    text: "#5B21B6",                   border: "#7C3AED" },
+  verde:   { bg: "var(--promo-new-bg)",      text: "var(--promo-new-text)",      border: "var(--promo-new-accent)"      }, // teal accent
+  azul:    { bg: "var(--promo-active-bg)",   text: "var(--promo-active-text)",   border: "var(--promo-active-accent)"   }, // azul sistema
+  ambar:   { bg: "var(--promo-offer-bg)",    text: "var(--promo-offer-text)",    border: "var(--promo-offer-accent)"    }, // ámbar sistema
+  rojo:    { bg: "var(--promo-expired-bg)",  text: "var(--promo-expired-text)",  border: "var(--promo-expired-accent)"  }, // muy sutil (vencida)
+  purpura: { bg: "rgba(124, 58, 237, 0.10)", text: "#A78BFA",                   border: "rgba(124, 58, 237, 0.25)"     }, // violeta suave
 };
 
 const TIPO_BADGE = {

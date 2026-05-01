@@ -141,16 +141,16 @@
   border-radius: 10px;
   border: 1px solid transparent;
   cursor: pointer;
-  background: var(--hb-bg, #DCFCE7);
-  color: var(--hb-color, #166534);
+  background: var(--hb-bg, var(--status-ok-bg));
+  color: var(--hb-color, var(--status-ok-text));
   font-size: 12px;
   transition: opacity 0.15s, transform 0.1s;
 }
 .hora-bloque:hover { opacity: 0.82; transform: scale(1.03); }
 
-.hora-disponible    { border-color: #86EFAC; }
+.hora-disponible    { border-color: var(--status-ok-border); }
 .hora-ocupado       { cursor: not-allowed; }
-.hora-mantenimiento { border-color: #D1D5DB; }
+.hora-mantenimiento { border-color: var(--status-neutral-border); }
 
 .hb-hora  { font-weight: 700; font-size: 13px; }
 .hb-icon  { font-size: 14px; }
