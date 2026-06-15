@@ -1,7 +1,7 @@
 // src/components/TabCanchas.jsx — Gestión visual de canchas y disponibilidad
 import { useState, useMemo, useCallback } from "react";
 import { useStore } from "../data/store.jsx";
-import { CANCHAS as CANCHAS_BASE, LOCALES, DEPORTE_EMOJI } from "../data/canchas.js";
+import { CANCHAS as CANCHAS_BASE, LOCALES } from "../data/canchas.js";
 import Modal from "./Modal";
 import KpisCanchas from "./kpis/KpisCanchas.jsx";
 import "../styles/TabCanchas.css";
@@ -72,9 +72,9 @@ function getCanchaEstado(canchaId, fecha, reservas, bloqueos) {
   if (resActivas.length === 0 && bloqActivos.length === 0)
     return { tipo: "disponible",    label: "Disponible",           color: "var(--status-ok-text)",      bg: "var(--status-ok-bg)",      icon: "✓"  };
   if (bloqActivos.length > 0 && resActivas.length === 0)
-    return { tipo: "mantenimiento", label: "Bloqueada",            color: "var(--status-neutral-text)", bg: "var(--status-neutral-bg)", icon: "🔧" };
+    return { tipo: "mantenimiento", label: "Bloqueada",            color: "var(--status-neutral-text)", bg: "var(--status-neutral-bg)", icon: "" };
   if (resActivas.length > 0)
-    return { tipo: "parcial",       label: "Parcialmente ocupada", color: "var(--status-warn-text)",    bg: "var(--status-warn-bg)",    icon: "📅" };
+    return { tipo: "parcial",       label: "Parcialmente ocupada", color: "var(--status-warn-text)",    bg: "var(--status-warn-bg)",    icon: "" };
 
   return { tipo: "disponible", label: "Disponible", color: "var(--status-ok-text)", bg: "var(--status-ok-bg)", icon: "✓" };
 }
@@ -83,9 +83,9 @@ function getCanchaEstado(canchaId, fecha, reservas, bloqueos) {
 function CanchaCard({ cancha, fecha, reservas, bloqueos, onClick }) {
   let estado = getCanchaEstado(cancha.id, fecha, reservas, bloqueos);
   if (estado.tipo === "disponible" && cancha.estadoForzado === "no-disponible") {
-    estado = { tipo: "no-disponible", label: "No disponible",    color: "var(--status-neutral-text)", bg: "var(--status-neutral-bg)", icon: "🔧" };
+    estado = { tipo: "no-disponible", label: "No disponible",    color: "var(--status-neutral-text)", bg: "var(--status-neutral-bg)", icon: "" };
   } else if (estado.tipo === "disponible" && cancha.estadoForzado === "mantenimiento") {
-    estado = { tipo: "mantenimiento", label: "En mantenimiento", color: "var(--status-neutral-text)", bg: "var(--status-neutral-bg)", icon: "🔧" };
+    estado = { tipo: "mantenimiento", label: "En mantenimiento", color: "var(--status-neutral-text)", bg: "var(--status-neutral-bg)", icon: "" };
   }
   const local = LOCALES[cancha.localId]?.nombre ?? cancha.localId;
   return (
@@ -95,7 +95,7 @@ function CanchaCard({ cancha, fecha, reservas, bloqueos, onClick }) {
         <div className="cancha-card-nombre">{cancha.nombre}</div>
         <div className="cancha-card-local">{local}</div>
         <span className="cancha-card-estado" style={{ color: estado.color, background: estado.bg }}>
-          {estado.icon} {estado.label}
+          {estado.icon ? `${estado.icon} ` : ""}{estado.label}
         </span>
       </div>
     </button>
@@ -106,8 +106,8 @@ function CanchaCard({ cancha, fecha, reservas, bloqueos, onClick }) {
 function HoraBloque({ hora, estado, onClick }) {
   const estilos = {
     disponible:    { color: "var(--status-ok-text)",      bg: "var(--status-ok-bg)",      icon: "✓",  label: "Disponible"    },
-    ocupado:       { color: "var(--status-error-text)",   bg: "var(--status-error-bg)",   icon: "📅", label: "Reservado"     },
-    mantenimiento: { color: "var(--status-neutral-text)", bg: "var(--status-neutral-bg)", icon: "🔧", label: "Mantenimiento" },
+    ocupado:       { color: "var(--status-error-text)",   bg: "var(--status-error-bg)",   icon: "", label: "Reservado"     },
+    mantenimiento: { color: "var(--status-neutral-text)", bg: "var(--status-neutral-bg)", icon: "", label: "Mantenimiento" },
   };
   const s = estilos[estado] ?? estilos.disponible;
 
@@ -119,7 +119,7 @@ function HoraBloque({ hora, estado, onClick }) {
       title={`${hora} — ${s.label}. ${estado === "disponible" ? "Clic para bloquear" : estado === "mantenimiento" ? "Clic para desbloquear" : "Hay una reserva activa"}`}
     >
       <span className="hb-hora">{hora}</span>
-      <span className="hb-icon">{s.icon}</span>
+      {s.icon && <span className="hb-icon">{s.icon}</span>}
       <span className="hb-label">{s.label}</span>
     </button>
   );
@@ -190,7 +190,7 @@ function ModalHorarios({ cancha, fecha, onFechaChange, reservas, bloqueos, addBl
   const libres     = total - ocupados - bloqueados;
 
   return (
-    <Modal title={`${DEPORTE_EMOJI[cancha.deporte]} ${cancha.nombre} — Gestión de horarios`} onClose={onClose} size="lg">
+    <Modal title={`${cancha.nombre} — Gestión de horarios`} onClose={onClose} size="lg">
       <div className="modal-horarios-header">
         <div className="mh-fecha-row">
           <label className="form-label">Fecha</label>
@@ -198,15 +198,15 @@ function ModalHorarios({ cancha, fecha, onFechaChange, reservas, bloqueos, addBl
         </div>
         <div className="mh-summary">
           <span className="mh-chip" style={{ color: "var(--status-ok-text)",      background: "var(--status-ok-bg)"      }}>✓ {libres} libres</span>
-          <span className="mh-chip" style={{ color: "var(--status-error-text)",   background: "var(--status-error-bg)"   }}>📅 {ocupados} reservados</span>
-          <span className="mh-chip" style={{ color: "var(--status-neutral-text)", background: "var(--status-neutral-bg)" }}>🔧 {bloqueados} bloqueados</span>
+          <span className="mh-chip" style={{ color: "var(--status-error-text)",   background: "var(--status-error-bg)"   }}>{ocupados} reservados</span>
+          <span className="mh-chip" style={{ color: "var(--status-neutral-text)", background: "var(--status-neutral-bg)" }}>{bloqueados} bloqueados</span>
         </div>
       </div>
 
       <div className="mh-leyenda">
         <span className="mh-ley-item" style={{ color: "var(--status-ok-text)"      }}>✓ Disponible — clic para bloquear</span>
-        <span className="mh-ley-item" style={{ color: "var(--status-neutral-text)" }}>🔧 Mantenimiento — clic para liberar</span>
-        <span className="mh-ley-item" style={{ color: "var(--status-error-text)"   }}>📅 Reservado — cancelar reserva primero</span>
+        <span className="mh-ley-item" style={{ color: "var(--status-neutral-text)" }}>Mantenimiento — clic para liberar</span>
+        <span className="mh-ley-item" style={{ color: "var(--status-error-text)"   }}>Reservado — cancelar reserva primero</span>
       </div>
 
       <div className="horas-grid">
@@ -217,7 +217,7 @@ function ModalHorarios({ cancha, fecha, onFechaChange, reservas, bloqueos, addBl
 
       <div className="mh-rango-section">
         <button className="btn btn-sm" onClick={() => setModoRango((v) => !v)}>
-          {modoRango ? "▲ Cerrar" : "🔧 Programar mantenimiento (rango de fechas)"}
+          {modoRango ? "▲ Cerrar" : "Programar mantenimiento (rango de fechas)"}
         </button>
         {modoRango && (
           <div className="mh-rango-form">
@@ -269,7 +269,7 @@ function ModalHorarios({ cancha, fecha, onFechaChange, reservas, bloqueos, addBl
             ) : (
               <>
                 <p className="mh-confirm-title">
-                  {confirmPending.tipo === "bloquear" ? "🔧 Bloquear por mantenimiento" : "✓ Liberar horario"}
+                  {confirmPending.tipo === "bloquear" ? "Bloquear por mantenimiento" : "✓ Liberar horario"}
                 </p>
                 <p className="mh-confirm-desc">
                   {confirmPending.tipo === "bloquear"
@@ -352,7 +352,7 @@ function ModalNuevaCancha({ todasLasCanchas, sedesPermitidas, onSave, onClose })
         <div style={{ marginBottom: 16, padding: "0 20%", opacity: 0.95 }}>
           <CourtSVG deporte={form.deporte} />
           <div style={{ textAlign: "center", fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
-            Previsualización — {DEPORTE_EMOJI[form.deporte]} {form.deporte.charAt(0).toUpperCase() + form.deporte.slice(1)}
+            Previsualización — {form.deporte.charAt(0).toUpperCase() + form.deporte.slice(1)}
           </div>
         </div>
       )}
@@ -381,9 +381,9 @@ function ModalNuevaCancha({ todasLasCanchas, sedesPermitidas, onSave, onClose })
             }}
           >
             <option value="">Seleccionar...</option>
-            <option value="padel">🎾 Pádel</option>
-            <option value="basquet">🏀 Básquet</option>
-            <option value="voley">🏐 Vóley</option>
+            <option value="padel">Pádel</option>
+            <option value="basquet">Básquet</option>
+            <option value="voley">Vóley</option>
           </select>
           {errors.deporte && <span className="form-error">{errors.deporte}</span>}
         </div>
@@ -408,8 +408,8 @@ function ModalNuevaCancha({ todasLasCanchas, sedesPermitidas, onSave, onClose })
           <label className="form-label">Estado inicial *</label>
           <select className="form-input" value={form.estadoForzado} onChange={(e) => set("estadoForzado", e.target.value)}>
             <option value="disponible">✓ Disponible</option>
-            <option value="no-disponible">🔧 No disponible</option>
-            <option value="mantenimiento">🔧 En mantenimiento</option>
+            <option value="no-disponible">No disponible</option>
+            <option value="mantenimiento">En mantenimiento</option>
           </select>
         </div>
 
@@ -558,8 +558,8 @@ export default function TabCanchas() {
         {[
           { label: "Total canchas",       val: kpiHoy.total,        color: "var(--text-primary)",        bg: "transparent"              },
           { label: "✓ Disponibles hoy",   val: kpiHoy.disponibles,  color: "var(--status-ok-text)",      bg: "var(--status-ok-bg)"      },
-          { label: "📅 Ocupadas hoy",     val: kpiHoy.ocupadas,     color: "var(--status-warn-text)",    bg: "var(--status-warn-bg)"    },
-          { label: "🔧 Bloqueadas hoy",   val: kpiHoy.bloqueadas,   color: "var(--status-neutral-text)", bg: "var(--status-neutral-bg)" },
+          { label: "Ocupadas hoy",        val: kpiHoy.ocupadas,     color: "var(--status-warn-text)",    bg: "var(--status-warn-bg)"    },
+          { label: "Bloqueadas hoy",      val: kpiHoy.bloqueadas,   color: "var(--status-neutral-text)", bg: "var(--status-neutral-bg)" },
         ].map((c) => (
           <div key={c.label} className="kpi-card" style={{ background: c.bg }}>
             <div className="metric-label">{c.label}</div>
@@ -580,9 +580,9 @@ export default function TabCanchas() {
               <input type="date" className="form-input" value={fecha} onChange={(e) => setFecha(e.target.value)} style={{ maxWidth: 160 }} min={new Date().toISOString().split("T")[0]} />
               <select className="form-input" value={filtroDeporte} onChange={(e) => setFiltroDeporte(e.target.value)} style={{ maxWidth: 140 }}>
                 <option value="">Todos los deportes</option>
-                <option value="padel">🎾 Pádel</option>
-                <option value="basquet">🏀 Básquet</option>
-                <option value="voley">🏐 Vóley</option>
+                <option value="padel">Pádel</option>
+                <option value="basquet">Básquet</option>
+                <option value="voley">Vóley</option>
               </select>
               {filtroDeporte && (
                 <button className="btn" onClick={() => setFiltroDeporte("")}>Limpiar</button>

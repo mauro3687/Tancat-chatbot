@@ -17,8 +17,6 @@ export const CANCHAS = [
 
 export const DEPORTES = ["padel", "basquet", "voley"];
 
-export const DEPORTE_EMOJI = { padel: "🎾", basquet: "🏀", voley: "🏐" };
-
 // Horarios disponibles (turnos de 1 hora, 8 a 22)
 export const HORARIOS = Array.from({ length: 14 }, (_, i) => {
   const h = 8 + i;

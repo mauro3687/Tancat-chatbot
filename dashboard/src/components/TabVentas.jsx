@@ -1,10 +1,9 @@
-// src/components/TabVentas.jsx — Ventas de productos del inventario a clientes registrados
-import { useState, useMemo, Fragment } from "react";
+import { useState, Fragment } from "react";
 import { useStore } from "../data/store.jsx";
 import Modal from "./Modal";
 import "../styles/TabVentas.css";
 
-const METODOS       = ["Efectivo", "Transferencia", "Tarjeta", "MercadoPago"];
+const METODOS = ["Efectivo", "Transferencia", "Tarjeta", "MercadoPago"];
 const ESTADOS_VENTA = ["Cobrado", "Pendiente"];
 
 const RECIBO_EMPTY = {
@@ -18,17 +17,16 @@ const LINEA_CONSUMIBLE_EMPTY = { productoId: "", nombre: "", cantidad: 1, precio
 const hoy = () => new Date().toISOString().split("T")[0];
 
 const EMPTY = {
-  clienteId:      "",
-  productoId:     "",
-  cantidad:       1,
-  fecha:          "",   // BUG-025: evaluado en openAdd con hoy(), no al cargar el módulo
-  monto:          0,
-  metodoPago:     "Efectivo",
-  estado:         "Cobrado",
-  // Campos denormalizados para display/reportes
-  clienteNombre:  "",
+  clienteId: "",
+  productoId: "",
+  cantidad: 1,
+  fecha: "",
+  monto: 0,
+  metodoPago: "Efectivo",
+  estado: "Cobrado",
+  clienteNombre: "",
   productoNombre: "",
-  unidad:         "",
+  unidad: "",
   precioUnitario: 0,
 };
 
@@ -43,83 +41,82 @@ const estadoClass = { Cobrado: "s-confirmed", Pendiente: "s-pending" };
 export default function TabVentas() {
   const { ventas, clientes, stock, reservas, prestamos, addVenta, updateVenta, deleteVenta, updateStock } = useStore();
 
-  const [search,       setSearch]       = useState("");
+  const [search, setSearch] = useState("");
   const [filterEstado, setFilterEstado] = useState("");
-  const [modal,        setModal]        = useState(null);
-  const [form,         setForm]         = useState(EMPTY);
-  const [errors,       setErrors]       = useState({});
+  const [modal, setModal] = useState(null);
+  const [form, setForm] = useState(EMPTY);
+  const [errors, setErrors] = useState({});
 
-  // ── Estado del recibo ──────────────────────────────────────────────────────
-  const [recibo,            setRecibo]            = useState(null);
-  const [reciboForm,        setReciboForm]        = useState(RECIBO_EMPTY);
-  const [reciboLineas,      setReciboLineas]      = useState([]); // consumibles (existentes + nuevos)
-  const [reciboReservas,    setReciboReservas]    = useState([]); // { ...reserva, incluido: true }
-  const [reciboPrestamos,   setReciboPrestamos]   = useState([]); // { ...prestamo, incluido: true, monto: 0 }
-  const [expandedId,        setExpandedId]        = useState(null);
+  // estado del recibo
+  const [recibo, setRecibo] = useState(null);
+  const [reciboForm, setReciboForm] = useState(RECIBO_EMPTY);
+  const [reciboLineas, setReciboLineas] = useState([]);
+  const [reciboReservas, setReciboReservas] = useState([]);
+  const [reciboPrestamos, setReciboPrestamos] = useState([]);
+  const [expandedId, setExpandedId] = useState(null);
 
-  // ── Filtrado ───────────────────────────────────────────────────────────────
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase();
-    return ventas.filter((v) =>
-      ((v.clienteNombre || v.cliente || "").toLowerCase().includes(q) ||
-       (v.productoNombre || v.servicio || "").toLowerCase().includes(q) ||
-       (v.id || "").toLowerCase().includes(q)) &&
-      (filterEstado === "" || v.estado === filterEstado)
-    );
-  }, [ventas, search, filterEstado]);
+  const q = search.toLowerCase();
+  const filtered = ventas.filter((v) =>
+    ((v.clienteNombre || v.cliente || "").toLowerCase().includes(q) ||
+     (v.productoNombre || v.servicio || "").toLowerCase().includes(q) ||
+     (v.id || "").toLowerCase().includes(q)) &&
+    (filterEstado === "" || v.estado === filterEstado)
+  );
 
-  const totalCobrado  = filtered.filter((v) => v.estado === "Cobrado").reduce((s, v) => s + Number(v.monto || 0), 0);
+  const totalCobrado = filtered.filter((v) => v.estado === "Cobrado").reduce((s, v) => s + Number(v.monto || 0), 0);
   const totalPendiente = filtered.filter((v) => v.estado === "Pendiente").reduce((s, v) => s + Number(v.monto || 0), 0);
 
-  // ── Apertura de modales ────────────────────────────────────────────────────
-  const openAdd    = () => { setForm({ ...EMPTY, fecha: hoy() }); setErrors({}); setModal({ mode: "add" }); };
-  const openEdit   = (v) => { setForm({ ...EMPTY, ...v });        setErrors({}); setModal({ mode: "edit", data: v }); };
+  const openAdd = () => {
+    setForm({ ...EMPTY, fecha: hoy() });
+    setErrors({});
+    setModal({ mode: "add" });
+  };
+  const openEdit = (v) => {
+    setForm({ ...v });
+    setErrors({});
+    setModal({ mode: "edit", data: v });
+  };
   const openDelete = (v) => setModal({ mode: "delete", data: v });
   const closeModal = () => setModal(null);
-  const setField   = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
-  // ── Al cambiar cliente ─────────────────────────────────────────────────────
   const handleClienteChange = (e) => {
     const c = clientes.find((c) => c.id === e.target.value);
-    setForm((f) => ({
-      ...f,
-      clienteId:     c ? c.id    : "",
+    setForm({
+      ...form,
+      clienteId: c ? c.id : "",
       clienteNombre: c ? c.nombre : "",
-    }));
+    });
   };
 
-  // ── Al cambiar producto — recalcular monto ─────────────────────────────────
+  // al cambiar producto recalculo el monto
   const handleProductoChange = (e) => {
     const p = stock.find((s) => s.id === e.target.value);
-    setForm((f) => ({
-      ...f,
-      productoId:     p ? p.id              : "",
-      productoNombre: p ? p.nombre          : "",
-      unidad:         p ? p.unidad          : "",
-      precioUnitario: p ? (p.precioUnitario ?? 0) : 0,
-      monto:          p ? (p.precioUnitario ?? 0) * f.cantidad : 0,
-    }));
+    setForm({
+      ...form,
+      productoId: p ? p.id : "",
+      productoNombre: p ? p.nombre : "",
+      unidad: p ? p.unidad : "",
+      precioUnitario: p ? (p.precioUnitario || 0) : 0,
+      monto: p ? (p.precioUnitario || 0) * form.cantidad : 0,
+    });
   };
 
-  // ── Al cambiar cantidad — recalcular monto ─────────────────────────────────
   const handleCantidadChange = (e) => {
     const cant = Math.max(1, parseInt(e.target.value) || 1);
-    setForm((f) => ({
-      ...f,
+    setForm({
+      ...form,
       cantidad: cant,
-      monto:    f.precioUnitario * cant,
-    }));
+      monto: form.precioUnitario * cant,
+    });
   };
 
-  // ── Validación ─────────────────────────────────────────────────────────────
   const validate = () => {
     const e = {};
-    if (!form.clienteId)  e.clienteId  = "Seleccioná un cliente registrado";
+    if (!form.clienteId) e.clienteId = "Seleccioná un cliente registrado";
     if (!form.productoId) e.productoId = "Seleccioná un producto del inventario";
-    if (!form.fecha)      e.fecha      = "La fecha es obligatoria";
-    if (form.cantidad < 1) e.cantidad  = "La cantidad debe ser al menos 1";
+    if (!form.fecha) e.fecha = "La fecha es obligatoria";
+    if (form.cantidad < 1) e.cantidad = "La cantidad debe ser al menos 1";
 
-    // Verificar stock disponible solo en alta
     if (modal?.mode === "add" && form.productoId) {
       const prod = stock.find((s) => s.id === form.productoId);
       if (prod && form.cantidad > prod.cantidad) {
@@ -127,67 +124,62 @@ export default function TabVentas() {
       }
     }
     setErrors(e);
-    return Object.keys(e).length === 0;
+    if (e.clienteId || e.productoId || e.fecha || e.cantidad) return false;
+    return true;
   };
 
-  // ── Guardar ────────────────────────────────────────────────────────────────
   const handleSave = async () => {
     if (!validate()) return;
 
     if (modal.mode === "add") {
-      // Registrar venta
       await addVenta({
-        clienteId:      form.clienteId,
-        clienteNombre:  form.clienteNombre,
-        productoId:     form.productoId,
+        clienteId: form.clienteId,
+        clienteNombre: form.clienteNombre,
+        productoId: form.productoId,
         productoNombre: form.productoNombre,
-        cantidad:       form.cantidad,
-        unidad:         form.unidad,
+        cantidad: form.cantidad,
+        unidad: form.unidad,
         precioUnitario: form.precioUnitario,
-        monto:          form.monto,
-        fecha:          form.fecha,
-        metodoPago:     form.metodoPago,
-        estado:         form.estado,
+        monto: form.monto,
+        fecha: form.fecha,
+        metodoPago: form.metodoPago,
+        estado: form.estado,
       });
-      // Descontar del stock
+      // descuento del stock
       const prod = stock.find((s) => s.id === form.productoId);
       if (prod) {
         await updateStock(prod.id, { cantidad: prod.cantidad - form.cantidad });
       }
     } else {
-      // Edición: solo permite cambiar fecha, método y estado (no cantidad/producto)
+      // en edicion solo dejo cambiar fecha, metodo y estado
       await updateVenta(modal.data.id, {
-        fecha:      form.fecha,
+        fecha: form.fecha,
         metodoPago: form.metodoPago,
-        estado:     form.estado,
+        estado: form.estado,
       });
     }
     closeModal();
   };
 
-  // ── Eliminar (restaura stock) ──────────────────────────────────────────────
   const handleDelete = async () => {
     const v = modal.data;
     await deleteVenta(v.id);
-    // Restaurar unidades al stock
     if (v.productoId && v.cantidad) {
       const prod = stock.find((s) => s.id === v.productoId);
       if (prod) {
         await updateStock(prod.id, { cantidad: prod.cantidad + Number(v.cantidad) });
       } else {
-        // BUG-015: producto ya no existe en inventario — advertir en consola y continuar
-        console.warn(`TabVentas: no se restauró stock del producto ${v.productoId} (eliminado del inventario)`);
+        // si el producto ya fue eliminado del inventario no restauramos stock
+        console.warn(`no se restauró stock del producto ${v.productoId}, ya no existe`);
       }
     }
     closeModal();
   };
 
-  // ── Producto seleccionado y stock disponible ───────────────────────────────
   const productoSeleccionado = stock.find((s) => s.id === form.productoId);
-  const stockDisponible      = productoSeleccionado?.cantidad ?? 0;
-  const clienteSeleccionado  = clientes.find((c) => c.id === form.clienteId);
+  const stockDisponible = productoSeleccionado?.cantidad || 0;
+  const clienteSeleccionado = clientes.find((c) => c.id === form.clienteId);
 
-  // ── Helpers de recibo ──────────────────────────────────────────────────────
   const openRecibo = () => {
     setReciboForm(RECIBO_EMPTY);
     setReciboLineas([{ ...LINEA_CONSUMIBLE_EMPTY }]);
@@ -196,11 +188,11 @@ export default function TabVentas() {
     setRecibo("open");
   };
 
-  // Al cambiar cliente, carga automáticamente sus reservas, ventas y préstamos
+  // al cambiar cliente cargo sus reservas, ventas y prestamos
   const handleReciboClienteChange = (e) => {
     const cid = e.target.value;
-    const c   = clientes.find((cl) => cl.id === cid);
-    setReciboForm((f) => ({ ...f, clienteId: cid, clienteNombre: c ? c.nombre : "" }));
+    const c = clientes.find((cl) => cl.id === cid);
+    setReciboForm({ ...reciboForm, clienteId: cid, clienteNombre: c ? c.nombre : "" });
 
     if (!cid) {
       setReciboReservas([]);
@@ -209,47 +201,44 @@ export default function TabVentas() {
       return;
     }
 
-    // Reservas activas del cliente → todas pre-seleccionadas
     const resCliente = reservas
       .filter((r) => r.clienteId === cid && r.estado !== "Cancelada")
       .map((r) => ({ ...r, incluido: true }));
     setReciboReservas(resCliente);
 
-    // Ventas ya registradas del cliente (no recibos) → pre-cargadas como líneas
-    const ventasCliente = (ventas ?? [])
+    const ventasCliente = (ventas || [])
       .filter((v) => v.clienteId === cid && v.tipo !== "recibo")
       .map((v) => ({
-        productoId:     v.productoId     || "",
-        nombre:         v.productoNombre || v.servicio || "",
-        cantidad:       v.cantidad       || 1,
+        productoId: v.productoId || "",
+        nombre: v.productoNombre || v.servicio || "",
+        cantidad: v.cantidad || 1,
         precioUnitario: v.precioUnitario || 0,
-        monto:          Number(v.monto)  || 0,
-        unidad:         v.unidad         || "u",
-        fromVenta:      true,
-        ventaId:        v.id,
-        incluido:       true,
+        monto: Number(v.monto) || 0,
+        unidad: v.unidad || "u",
+        fromVenta: true,
+        ventaId: v.id,
+        incluido: true,
       }));
 
-    // Préstamos activos del cliente → pre-cargados
-    const presCliente = (prestamos ?? [])
+    const presCliente = (prestamos || [])
       .filter((p) => p.clienteId === cid && p.estado === "entregado")
       .map((p) => ({
-        prestamoId:  p.id,
-        nombre:      p.nombre,
-        cantidad:    p.cantidad,
-        unidad:      p.unidad || "u",
-        monto:       0,
+        prestamoId: p.id,
+        nombre: p.nombre,
+        cantidad: p.cantidad,
+        unidad: p.unidad || "u",
+        monto: 0,
         fromPrestamo: true,
-        incluido:    true,
+        incluido: true,
       }));
 
     setReciboLineas([...ventasCliente, { ...LINEA_CONSUMIBLE_EMPTY }]);
     setReciboPrestamos(presCliente);
   };
 
-  const toggleReserva     = (id) => setReciboReservas((prev) => prev.map((r) => r.id === id ? { ...r, incluido: !r.incluido } : r));
-  const toggleLinea       = (i)  => setReciboLineas((prev)   => prev.map((l, idx) => idx === i ? { ...l, incluido: !l.incluido } : l));
-  const togglePrestamo    = (i)  => setReciboPrestamos((prev) => prev.map((p, idx) => idx === i ? { ...p, incluido: !p.incluido } : p));
+  const toggleReserva = (id) => setReciboReservas((prev) => prev.map((r) => r.id === id ? { ...r, incluido: !r.incluido } : r));
+  const toggleLinea = (i) => setReciboLineas((prev) => prev.map((l, idx) => idx === i ? { ...l, incluido: !l.incluido } : l));
+  const togglePrestamo = (i) => setReciboPrestamos((prev) => prev.map((p, idx) => idx === i ? { ...p, incluido: !p.incluido } : p));
 
   const addLineaConsumo = () =>
     setReciboLineas((prev) => [...prev, { ...LINEA_CONSUMIBLE_EMPTY }]);
@@ -257,7 +246,7 @@ export default function TabVentas() {
   const addLineaPrestamo = () =>
     setReciboPrestamos((prev) => [...prev, { prestamoId: null, nombre: "", cantidad: 1, unidad: "u", monto: 0, fromPrestamo: false, incluido: true }]);
 
-  const removeLinea    = (i) => setReciboLineas((prev)    => prev.filter((_, idx) => idx !== i));
+  const removeLinea = (i) => setReciboLineas((prev) => prev.filter((_, idx) => idx !== i));
   const removePrestamo = (i) => setReciboPrestamos((prev) => prev.filter((_, idx) => idx !== i));
 
   const updateLinea = (i, field, value) => {
@@ -267,10 +256,10 @@ export default function TabVentas() {
       if (field === "productoId") {
         const prod = stock.find((s) => s.id === value);
         if (prod) {
-          next[i].nombre         = prod.nombre;
-          next[i].precioUnitario = prod.precioUnitario ?? 0;
-          next[i].unidad         = prod.unidad ?? "u";
-          next[i].monto          = (prod.precioUnitario ?? 0) * next[i].cantidad;
+          next[i].nombre = prod.nombre;
+          next[i].precioUnitario = prod.precioUnitario || 0;
+          next[i].unidad = prod.unidad || "u";
+          next[i].monto = (prod.precioUnitario || 0) * next[i].cantidad;
         }
       }
       if (field === "cantidad") {
@@ -283,12 +272,10 @@ export default function TabVentas() {
   const updatePrestamo = (i, field, value) =>
     setReciboPrestamos((prev) => prev.map((p, idx) => idx === i ? { ...p, [field]: value } : p));
 
-  const totalRecibo = useMemo(() => {
-    const sumReservas  = reciboReservas.filter((r) => r.incluido).reduce((s, r) => s + (Number(r.monto) || 0), 0);
-    const sumConsumo   = reciboLineas.filter((l) => l.incluido !== false && l.monto > 0).reduce((s, l) => s + (Number(l.monto) || 0), 0);
-    const sumPrestamos = reciboPrestamos.filter((p) => p.incluido && p.monto > 0).reduce((s, p) => s + (Number(p.monto) || 0), 0);
-    return sumReservas + sumConsumo + sumPrestamos;
-  }, [reciboReservas, reciboLineas, reciboPrestamos]);
+  const sumReservas = reciboReservas.filter((r) => r.incluido).reduce((s, r) => s + (Number(r.monto) || 0), 0);
+  const sumConsumo = reciboLineas.filter((l) => l.incluido !== false && l.monto > 0).reduce((s, l) => s + (Number(l.monto) || 0), 0);
+  const sumPrestamos = reciboPrestamos.filter((p) => p.incluido && p.monto > 0).reduce((s, p) => s + (Number(p.monto) || 0), 0);
+  const totalRecibo = sumReservas + sumConsumo + sumPrestamos;
 
   const handleSaveRecibo = async () => {
     if (!reciboForm.clienteId) return;
@@ -296,47 +283,47 @@ export default function TabVentas() {
 
     const lineas = [
       ...reciboReservas.filter((r) => r.incluido).map((r) => ({
-        tipo:          "cancha",
-        reservaId:     r.id,
-        descripcion:   `${r.servicio || r.deporte || "Cancha"} — ${r.fecha}${r.horario ? ` ${r.horario}` : ""}`,
-        cantidad:      1,
+        tipo: "cancha",
+        reservaId: r.id,
+        descripcion: `${r.servicio || r.deporte || "Cancha"} — ${r.fecha}${r.horario ? ` ${r.horario}` : ""}`,
+        cantidad: 1,
         precioUnitario: Number(r.monto) || 0,
-        monto:         Number(r.monto)  || 0,
+        monto: Number(r.monto) || 0,
       })),
       ...reciboLineas
         .filter((l) => l.incluido !== false && l.monto > 0)
         .map((l) => ({
-          tipo:          "consumible",
-          productoId:    l.productoId || null,
-          ventaId:       l.ventaId    || null,
-          descripcion:   l.nombre,
-          cantidad:      l.cantidad,
+          tipo: "consumible",
+          productoId: l.productoId || null,
+          ventaId: l.ventaId || null,
+          descripcion: l.nombre,
+          cantidad: l.cantidad,
           precioUnitario: l.precioUnitario,
-          monto:         l.monto,
-          unidad:        l.unidad,
+          monto: l.monto,
+          unidad: l.unidad,
         })),
       ...reciboPrestamos.filter((p) => p.incluido).map((p) => ({
-        tipo:        "prestamo",
-        prestamoId:  p.prestamoId || null,
+        tipo: "prestamo",
+        prestamoId: p.prestamoId || null,
         descripcion: p.nombre,
-        cantidad:    p.cantidad,
-        unidad:      p.unidad,
-        monto:       Number(p.monto) || 0,
+        cantidad: p.cantidad,
+        unidad: p.unidad,
+        monto: Number(p.monto) || 0,
       })),
     ];
 
     await addVenta({
-      tipo:          "recibo",
-      clienteId:     reciboForm.clienteId,
+      tipo: "recibo",
+      clienteId: reciboForm.clienteId,
       clienteNombre: reciboForm.clienteNombre,
       lineas,
-      monto:         totalRecibo,
-      fecha:         hoy,
-      metodoPago:    reciboForm.metodoPago,
-      estado:        reciboForm.estado,
+      monto: totalRecibo,
+      fecha: hoy,
+      metodoPago: reciboForm.metodoPago,
+      estado: reciboForm.estado,
     });
 
-    // Descontar stock solo de consumibles NUEVOS (no los que vienen de ventas ya registradas)
+    // descuento stock solo de consumibles nuevos (no los que ya estaban registrados)
     for (const l of reciboLineas.filter((x) => x.productoId && !x.fromVenta && x.incluido !== false)) {
       const prod = stock.find((s) => s.id === l.productoId);
       if (prod) await updateStock(prod.id, { cantidad: prod.cantidad - Number(l.cantidad) });
@@ -420,7 +407,7 @@ export default function TabVentas() {
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <span>{v.clienteNombre || v.cliente || "—"}</span>
                           {(() => {
-                            const activos = (prestamos ?? []).filter((p) => p.clienteId === v.clienteId && p.estado === "entregado");
+                            const activos = (prestamos || []).filter((p) => p.clienteId === v.clienteId && p.estado === "entregado");
                             return activos.length > 0 ? (
                               <span className="badge-prestamo-venta" title={activos.map((p) => p.nombre).join(", ")}>
                                 {activos.length} préstamo{activos.length !== 1 ? "s" : ""}
@@ -431,17 +418,17 @@ export default function TabVentas() {
                       </td>
                       <td>
                         {esRecibo
-                          ? <span className="badge-recibo">Recibo — {(v.lineas ?? []).length} ítems</span>
+                          ? <span className="badge-recibo">Recibo — {(v.lineas || []).length} ítems</span>
                           : (v.productoNombre || v.servicio || "—")}
                       </td>
                       <td style={{ textAlign: "right" }} className="c-secondary-sm">
-                        {esRecibo ? "—" : `${v.cantidad ?? "—"} ${v.unidad ?? ""}`}
+                        {esRecibo ? "—" : `${v.cantidad || "—"} ${v.unidad || ""}`}
                       </td>
                       <td>{fmtFecha(v.fecha)}</td>
                       <td style={{ textAlign: "right" }}>{!esRecibo && v.precioUnitario ? fmt(v.precioUnitario) : "—"}</td>
                       <td style={{ textAlign: "right" }} className="fw-600">{fmt(v.monto)}</td>
                       <td>{v.metodoPago}</td>
-                      <td><span className={`status ${estadoClass[v.estado] ?? ""}`}>{v.estado}</span></td>
+                      <td><span className={`status ${estadoClass[v.estado] || ""}`}>{v.estado}</span></td>
                       <td>
                         <div className="actions-row">
                           {esRecibo
@@ -458,7 +445,7 @@ export default function TabVentas() {
                       <tr key={`${v.id}-detail`} className="recibo-detail-row">
                         <td colSpan={10}>
                           <div className="recibo-lineas">
-                            {(v.lineas ?? []).map((l, i) => (
+                            {(v.lineas || []).map((l, i) => (
                               <div key={i} className="recibo-linea">
                                 <span className={`recibo-tipo-badge tipo-${l.tipo}`}>
                                   {l.tipo === "cancha" ? "Cancha" : "Consumible"}
@@ -517,8 +504,8 @@ export default function TabVentas() {
                   {errors.clienteId && <span className="form-error">{errors.clienteId}</span>}
                   {clienteSeleccionado && (
                     <div className="client-info-box">
-                      {clienteSeleccionado.telefono && <span>📞 {clienteSeleccionado.telefono}</span>}
-                      {clienteSeleccionado.email    && <span>✉ {clienteSeleccionado.email}</span>}
+                      {clienteSeleccionado.telefono && <span>{clienteSeleccionado.telefono}</span>}
+                      {clienteSeleccionado.email && <span>✉ {clienteSeleccionado.email}</span>}
                     </div>
                   )}
                 </>
@@ -531,7 +518,7 @@ export default function TabVentas() {
               {modal.mode === "edit" ? (
                 <div className="client-readonly-box">
                   <span className="client-readonly-name">{form.productoNombre || "—"}</span>
-                  <span>{form.cantidad} {form.unidad} × {fmt(form.precioUnitario ?? 0)}</span>
+                  <span>{form.cantidad} {form.unidad} × {fmt(form.precioUnitario || 0)}</span>
                 </div>
               ) : (
                 <>
@@ -553,9 +540,9 @@ export default function TabVentas() {
                   {errors.productoId && <span className="form-error">{errors.productoId}</span>}
                   {productoSeleccionado && (
                     <div className="client-info-box">
-                      <span>📦 Stock disponible: <strong>{stockDisponible} {productoSeleccionado.unidad}</strong></span>
+                      <span>Stock disponible: <strong>{stockDisponible} {productoSeleccionado.unidad}</strong></span>
                       {productoSeleccionado.precioUnitario
-                        ? <span>💰 Precio: <strong>{fmt(productoSeleccionado.precioUnitario)}/{productoSeleccionado.unidad}</strong></span>
+                        ? <span>Precio: <strong>{fmt(productoSeleccionado.precioUnitario)}/{productoSeleccionado.unidad}</strong></span>
                         : <span style={{ color: "var(--status-warn-text)" }}>⚠ Este producto no tiene precio configurado. Editalo en Inventario.</span>
                       }
                     </div>
@@ -584,7 +571,7 @@ export default function TabVentas() {
               </div>
             )}
 
-            {/* Monto (readonly, calculado) */}
+            {/* Total (se calcula solo) */}
             <div className="form-group">
               <label className="form-label">Total ($)</label>
               <input
@@ -607,7 +594,7 @@ export default function TabVentas() {
                 className={`form-input ${errors.fecha ? "input-error" : ""}`}
                 type="date"
                 value={form.fecha}
-                onChange={(e) => setField("fecha", e.target.value)}
+                onChange={(e) => setForm({ ...form, fecha: e.target.value })}
               />
               {errors.fecha && <span className="form-error">{errors.fecha}</span>}
             </div>
@@ -615,7 +602,7 @@ export default function TabVentas() {
             {/* Método de pago */}
             <div className="form-group">
               <label className="form-label">Método de pago</label>
-              <select className="form-input" value={form.metodoPago} onChange={(e) => setField("metodoPago", e.target.value)}>
+              <select className="form-input" value={form.metodoPago} onChange={(e) => setForm({ ...form, metodoPago: e.target.value })}>
                 {METODOS.map((m) => <option key={m}>{m}</option>)}
               </select>
             </div>
@@ -623,7 +610,7 @@ export default function TabVentas() {
             {/* Estado */}
             <div className="form-group">
               <label className="form-label">Estado</label>
-              <select className="form-input" value={form.estado} onChange={(e) => setField("estado", e.target.value)}>
+              <select className="form-input" value={form.estado} onChange={(e) => setForm({ ...form, estado: e.target.value })}>
                 {ESTADOS_VENTA.map((e) => <option key={e}>{e}</option>)}
               </select>
             </div>
@@ -658,7 +645,7 @@ export default function TabVentas() {
               </select>
             </div>
 
-            {/* ── CANCHA ── */}
+            {/* Cancha */}
             {reciboReservas.length > 0 && (
               <div className="form-group form-full">
                 <label className="form-label">Cancha alquilada</label>
@@ -674,11 +661,11 @@ export default function TabVentas() {
               </div>
             )}
 
-            {/* ── CONSUMIBLES (existentes + nuevos) ── */}
+            {/* Consumibles */}
             <div className="form-group form-full">
               <label className="form-label">Consumibles</label>
 
-              {/* Consumibles ya registrados para este cliente */}
+              {/* los que ya estaban registrados para este cliente */}
               {reciboLineas.filter((l) => l.fromVenta).map((l, i) => (
                 <div key={i} className={`recibo-linea-form ${l.incluido === false ? "recibo-linea-excluida" : ""}`}>
                   <input type="checkbox" checked={l.incluido !== false} onChange={() => toggleLinea(i)} />
@@ -689,7 +676,7 @@ export default function TabVentas() {
                 </div>
               ))}
 
-              {/* Nuevos consumibles */}
+              {/* nuevos consumibles */}
               {reciboLineas.filter((l) => !l.fromVenta).map((l, i) => {
                 const realIdx = reciboLineas.indexOf(l);
                 return (
@@ -703,7 +690,7 @@ export default function TabVentas() {
                       <option value="">— Seleccioná producto —</option>
                       {stock.filter((s) => s.cantidad > 0 && s.categoria === "venta").map((s) => (
                         <option key={s.id} value={s.id}>
-                          {s.nombre} — {fmt(s.precioUnitario ?? 0)}/{s.unidad}
+                          {s.nombre} — {fmt(s.precioUnitario || 0)}/{s.unidad}
                         </option>
                       ))}
                     </select>
@@ -725,7 +712,7 @@ export default function TabVentas() {
               </button>
             </div>
 
-            {/* ── PRÉSTAMOS (existentes + nuevos) ── */}
+            {/* Equipamiento prestado */}
             <div className="form-group form-full">
               <label className="form-label">Equipamiento prestado</label>
 
@@ -763,21 +750,21 @@ export default function TabVentas() {
               </button>
             </div>
 
-            {/* ── MÉTODO / ESTADO ── */}
+            {/* Método / Estado */}
             <div className="form-group">
               <label className="form-label">Método de pago</label>
-              <select className="form-input" value={reciboForm.metodoPago} onChange={(e) => setReciboForm((f) => ({ ...f, metodoPago: e.target.value }))}>
+              <select className="form-input" value={reciboForm.metodoPago} onChange={(e) => setReciboForm({ ...reciboForm, metodoPago: e.target.value })}>
                 {METODOS.map((m) => <option key={m}>{m}</option>)}
               </select>
             </div>
             <div className="form-group">
               <label className="form-label">Estado</label>
-              <select className="form-input" value={reciboForm.estado} onChange={(e) => setReciboForm((f) => ({ ...f, estado: e.target.value }))}>
+              <select className="form-input" value={reciboForm.estado} onChange={(e) => setReciboForm({ ...reciboForm, estado: e.target.value })}>
                 {ESTADOS_VENTA.map((e) => <option key={e}>{e}</option>)}
               </select>
             </div>
 
-            {/* ── TOTAL ── */}
+            {/* Total */}
             <div className="form-group form-full">
               <div className="recibo-total-preview">
                 {reciboReservas.filter((r) => r.incluido).map((r) => (

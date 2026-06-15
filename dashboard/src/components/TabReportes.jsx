@@ -890,7 +890,7 @@ export default function TabReportes() {
             disabled={pdfLoading}
             style={{ minWidth: 140 }}
           >
-            {pdfLoading ? "⏳ Generando…" : "⬇ Exportar PDF"}
+            {pdfLoading ? "Generando…" : "⬇ Exportar PDF"}
           </button>
           <button className="btn" onClick={() => exportCSV(reservas, "reservas-tancat.csv")}>↓ Reservas CSV</button>
           <button className="btn" onClick={() => exportCSV(ventas,   "ventas-tancat.csv")}>↓ Ventas CSV</button>

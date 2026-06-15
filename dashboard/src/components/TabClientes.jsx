@@ -224,8 +224,8 @@ export default function TabClientes() {
                 </div>
                 <div style={{ display: "flex", gap: 16, color: "var(--text-muted)", fontSize: 12 }}>
                   <span>{g.email    ? `✉ ${g.email}`    : <em>sin email</em>}</span>
-                  <span>{g.telefono ? `📞 ${g.telefono}` : <em>sin teléfono</em>}</span>
-                  {g.ciudad && <span>📍 {g.ciudad}</span>}
+                  <span>{g.telefono ? g.telefono : <em>sin teléfono</em>}</span>
+                  {g.ciudad && <span>{g.ciudad}</span>}
                 </div>
                 {g.reservas.length > 0 && (
                   <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 2 }}>

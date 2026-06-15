@@ -96,9 +96,9 @@ function AreaApilada({ reservas }) {
           <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
           <Tooltip contentStyle={{ fontSize: 12 }} />
           <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
-          <Area type="monotone" dataKey="padel"   name="🎾 Pádel"   stackId="1" stroke="#00C49A" fill="#00C49A22" />
-          <Area type="monotone" dataKey="basquet" name="🏀 Básquet" stackId="1" stroke="#4D8EF0" fill="#4D8EF022" />
-          <Area type="monotone" dataKey="voley"   name="🏐 Vóley"   stackId="1" stroke="#F0A030" fill="#F0A03022" />
+          <Area type="monotone" dataKey="padel"   name="Pádel"   stackId="1" stroke="#00C49A" fill="#00C49A22" />
+          <Area type="monotone" dataKey="basquet" name="Básquet" stackId="1" stroke="#4D8EF0" fill="#4D8EF022" />
+          <Area type="monotone" dataKey="voley"   name="Vóley"   stackId="1" stroke="#F0A030" fill="#F0A03022" />
         </AreaChart>
       </ResponsiveContainer>
     </div>

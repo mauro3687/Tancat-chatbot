@@ -2,7 +2,7 @@
 import { useState, useMemo } from "react";
 import { useStore } from "../data/store.jsx";
 import Modal from "./Modal";
-import { CANCHAS, DEPORTES, DEPORTE_EMOJI, PRECIOS, LOCALES } from "../data/canchas.js";
+import { CANCHAS, DEPORTES, PRECIOS, LOCALES } from "../data/canchas.js";
 import "../styles/TabReservas.css";
 
 const STATUS_CLASS = { Confirmada: "s-confirmed", Pendiente: "s-pending", Seña: "s-sena", Cancelada: "s-cancelled" };
@@ -76,7 +76,7 @@ function ModalDetalle({ reserva: r, clientes, onClose, onEdit }) {
       <div className="detail-grid">
         {[
           ["ID",       r.id],
-          ["Deporte",  `${DEPORTE_EMOJI[r.deporte] || ""} ${r.deporte || "—"}`],
+          ["Deporte",  r.deporte || "—"],
           ["Cancha",   r.cancha || "—"],
           ["Local",    LOCALES[r.localId]?.nombre || "—"],
           ["Fecha",    formatFecha(r.fecha)],
@@ -243,7 +243,7 @@ export default function TabReservas() {
       canchaId: cancha.id,
       cancha:   cancha.nombre,
       localId:  cancha.localId,
-      servicio: `${DEPORTE_EMOJI[f.deporte]} ${f.deporte.charAt(0).toUpperCase() + f.deporte.slice(1)} — ${cancha.nombre}`,
+      servicio: `${f.deporte.charAt(0).toUpperCase() + f.deporte.slice(1)} — ${cancha.nombre}`,
       personas: f.personas && f.personas !== cancha.capacidad ? f.personas : cancha.capacidad,
     }));
   };
@@ -398,7 +398,7 @@ export default function TabReservas() {
                 <tr key={r.id}>
                   <td><span className="mono">{r.id}</span></td>
                   <td className="fw-500">{clienteNombre(r)}</td>
-                  <td>{DEPORTE_EMOJI[r.deporte] || ""} {r.deporte || r.servicio}</td>
+                  <td>{r.deporte || r.servicio}</td>
                   <td className="c-secondary-sm">{r.cancha || "—"}</td>
                   <td>{formatFecha(r.fecha)}</td>
                   <td className="c-muted-xs">{r.horario || "—"}</td>
@@ -446,9 +446,9 @@ export default function TabReservas() {
                     {clienteSeleccionado.nombre}
                     {clienteSeleccionado.origen === "whatsapp" && <span className="badge-wa">WA</span>}
                   </span>
-                  {clienteSeleccionado.telefono && <span>📞 {clienteSeleccionado.telefono}</span>}
+                  {clienteSeleccionado.telefono && <span>{clienteSeleccionado.telefono}</span>}
                   {clienteSeleccionado.email    && <span>✉ {clienteSeleccionado.email}</span>}
-                  {clienteSeleccionado.ciudad   && <span>📍 {clienteSeleccionado.ciudad}</span>}
+                  {clienteSeleccionado.ciudad   && <span>{clienteSeleccionado.ciudad}</span>}
                 </div>
               ) : (
                 <>
@@ -467,9 +467,9 @@ export default function TabReservas() {
                   {errors.clienteId && <span className="form-error">{errors.clienteId}</span>}
                   {clienteSeleccionado && (
                     <div className="client-info-box">
-                      {clienteSeleccionado.telefono && <span>📞 {clienteSeleccionado.telefono}</span>}
+                      {clienteSeleccionado.telefono && <span>{clienteSeleccionado.telefono}</span>}
                       {clienteSeleccionado.email    && <span>✉ {clienteSeleccionado.email}</span>}
-                      {clienteSeleccionado.ciudad   && <span>📍 {clienteSeleccionado.ciudad}</span>}
+                      {clienteSeleccionado.ciudad   && <span>{clienteSeleccionado.ciudad}</span>}
                     </div>
                   )}
                 </>
@@ -487,7 +487,7 @@ export default function TabReservas() {
                 <option value="">Seleccioná un deporte</option>
                 {DEPORTES.map((d) => (
                   <option key={d} value={d}>
-                    {DEPORTE_EMOJI[d]} {d.charAt(0).toUpperCase() + d.slice(1)} — {formatMonto(getPrecio(d))}/h
+                    {d.charAt(0).toUpperCase() + d.slice(1)} — {formatMonto(getPrecio(d))}/h
                   </option>
                 ))}
               </select>
@@ -548,7 +548,7 @@ export default function TabReservas() {
               <label className="form-label">Cancha *</label>
               {todasOcupadas ? (
                 <div className="alert-no-availability">
-                  ⛔ No hay canchas disponibles para ese día y horario
+                  ⚠ No hay canchas disponibles para ese día y horario
                 </div>
               ) : (
                 <select

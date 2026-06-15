@@ -149,13 +149,13 @@ export default function Sidebar({ activeTab, setActiveTab, tabsPermitidos }) {
           {kpiReservasPendientes > 0 && (
             <button className="sidebar-kpi-chip" onClick={() => setActiveTab("reservas")}
               style={{ "--kc": "var(--status-warn-text)", "--kb": "var(--status-warn-bg)" }}>
-              📅 {kpiReservasPendientes} pendiente{kpiReservasPendientes !== 1 ? "s" : ""}
+              {kpiReservasPendientes} pendiente{kpiReservasPendientes !== 1 ? "s" : ""}
             </button>
           )}
           {kpiPrestamosActivos > 0 && (
             <button className="sidebar-kpi-chip" onClick={() => setActiveTab("inventario")}
               style={{ "--kc": "var(--status-warn-text)", "--kb": "var(--status-warn-bg)" }}>
-              📦 {kpiPrestamosActivos} préstamo{kpiPrestamosActivos !== 1 ? "s" : ""}
+              {kpiPrestamosActivos} préstamo{kpiPrestamosActivos !== 1 ? "s" : ""}
             </button>
           )}
           {kpiStockCritico > 0 && (

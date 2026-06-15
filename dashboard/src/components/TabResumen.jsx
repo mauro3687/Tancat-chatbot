@@ -6,7 +6,6 @@ import {
 } from "recharts";
 import { useStore } from "../data/store.jsx";
 import KpisReservas from "./kpis/KpisReservas.jsx";
-import { DEPORTE_EMOJI } from "../data/canchas.js";
 import "../styles/TabResumen.css";
 
 const STATUS_CLASS = { Confirmada: "s-confirmed", Pendiente: "s-pending", Seña: "s-sena", Cancelada: "s-cancelled" };
@@ -123,7 +122,6 @@ function TurnosHoy({ reservas, clientes }) {
       </div>
       {turnosHoy.length === 0 ? (
         <div className="turnos-vacio">
-          <span className="turnos-vacio-icon">📅</span>
           <span>No hay turnos registrados para hoy</span>
         </div>
       ) : (
@@ -131,7 +129,7 @@ function TurnosHoy({ reservas, clientes }) {
           {turnosHoy.map((r) => (
             <div key={r.id} className="turno-row">
               <span className="turno-hora">{r.horario?.split("—")[0]?.trim() ?? "—"}</span>
-              <span className="turno-deporte">{DEPORTE_EMOJI[r.deporte] ?? "🎾"}</span>
+              <span className="turno-deporte">{r.deporte ? r.deporte.charAt(0).toUpperCase() + r.deporte.slice(1) : "—"}</span>
               <div className="turno-info">
                 <span className="turno-cliente">{r.nombreCliente}</span>
                 <span className="turno-cancha">{r.cancha ?? "—"} · {r.horario ?? "—"}</span>
