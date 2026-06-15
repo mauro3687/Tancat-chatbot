@@ -1,9 +1,9 @@
-// src/components/TabInventario.jsx
+// src/pages/TabInventario.jsx
 import "../styles/TabInventario.css";
 import { useState, useMemo } from "react";
-import { useStore } from "../data/store.jsx";
-import Modal from "./Modal";
-import KpisInventario from "./kpis/KpisInventario.jsx";
+import { useStore } from "../context/StoreContext.jsx";
+import Modal from "../components/Modal";
+import KpisInventario from "../components/kpis/KpisInventario.jsx";
 
 // ── SVG Icons ─────────────────────────────────────────────────────────────────
 function IcoWarning({ s = 13 }) {

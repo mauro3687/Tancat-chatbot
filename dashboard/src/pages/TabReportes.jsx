@@ -1,11 +1,11 @@
-// src/components/TabReportes.jsx — Centro de análisis avanzado de TanCat v3.0
+// src/pages/TabReportes.jsx — Centro de análisis avanzado de TanCat v3.0
 import { useState, useMemo, useRef } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, Cell, Treemap, RadarChart, Radar, PolarGrid,
   PolarAngleAxis, PolarRadiusAxis, AreaChart, Area,
 } from "recharts";
-import { useStore } from "../data/store.jsx";
+import { useStore } from "../context/StoreContext.jsx";
 import { CANCHAS } from "../data/canchas.js";
 import "../styles/TabReportes.css";
 

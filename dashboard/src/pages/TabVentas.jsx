@@ -1,6 +1,6 @@
 import { useState, Fragment } from "react";
-import { useStore } from "../data/store.jsx";
-import Modal from "./Modal";
+import { useStore } from "../context/StoreContext.jsx";
+import Modal from "../components/Modal";
 import "../styles/TabVentas.css";
 
 const METODOS = ["Efectivo", "Transferencia", "Tarjeta", "MercadoPago"];

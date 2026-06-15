@@ -1,6 +1,6 @@
-// src/components/LoginScreen.jsx
+// src/pages/LoginScreen.jsx
 import { useState } from "react";
-import { useStore, USUARIOS } from "../data/store.jsx";
+import { useStore, USUARIOS } from "../context/StoreContext.jsx";
 import logoTancat from "../assets/images/logo-tancat.png";
 import "../styles/LoginScreen.css";
 

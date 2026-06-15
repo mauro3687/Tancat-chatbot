@@ -1,7 +1,7 @@
-// src/components/TabReservas.jsx — ABM completo de reservas con deportes y canchas
+// src/pages/TabReservas.jsx — ABM completo de reservas con deportes y canchas
 import { useState, useMemo } from "react";
-import { useStore } from "../data/store.jsx";
-import Modal from "./Modal";
+import { useStore } from "../context/StoreContext.jsx";
+import Modal from "../components/Modal";
 import { CANCHAS, DEPORTES, PRECIOS, LOCALES } from "../data/canchas.js";
 import "../styles/TabReservas.css";
 

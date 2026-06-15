@@ -1,6 +1,6 @@
-// src/components/TabIA.jsx — Módulo IA: análisis, marketing y estrategia de contenido
+// src/pages/TabIA.jsx — Módulo IA: análisis, marketing y estrategia de contenido
 import { useState } from "react";
-import { useStore } from "../data/store.jsx";
+import { useStore } from "../context/StoreContext.jsx";
 import {
   analizarConcurrencia,
   analizarHorarios,

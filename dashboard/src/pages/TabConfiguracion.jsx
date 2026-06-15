@@ -1,6 +1,6 @@
-// src/components/TabConfiguracion.jsx — Configuración de la empresa
+// src/pages/TabConfiguracion.jsx — Configuración de la empresa
 import { useState, useEffect, useRef } from "react";
-import { useStore } from "../data/store.jsx";
+import { useStore } from "../context/StoreContext.jsx";
 import { DEPORTES } from "../data/canchas.js";
 import { Mail, Phone, Clock } from "lucide-react";
 import "../styles/TabConfiguracion.css";

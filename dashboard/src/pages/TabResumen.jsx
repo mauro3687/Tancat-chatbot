@@ -1,11 +1,11 @@
-// src/components/TabResumen.jsx
+// src/pages/TabResumen.jsx
 import { useMemo } from "react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine,
 } from "recharts";
-import { useStore } from "../data/store.jsx";
-import KpisReservas from "./kpis/KpisReservas.jsx";
+import { useStore } from "../context/StoreContext.jsx";
+import KpisReservas from "../components/kpis/KpisReservas.jsx";
 import "../styles/TabResumen.css";
 
 const STATUS_CLASS = { Confirmada: "s-confirmed", Pendiente: "s-pending", Seña: "s-sena", Cancelada: "s-cancelled" };

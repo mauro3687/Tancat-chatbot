@@ -1,4 +1,4 @@
-// src/components/LoadingScreen.jsx
+// src/pages/LoadingScreen.jsx
 import "../styles/LoadingScreen.css";
 
 export default function LoadingScreen() {

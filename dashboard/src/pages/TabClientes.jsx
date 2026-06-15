@@ -1,7 +1,7 @@
-// src/components/TabClientes.jsx — ABM completo de clientes
+// src/pages/TabClientes.jsx — ABM completo de clientes
 import { useState, useMemo } from "react";
-import { useStore } from "../data/store.jsx";
-import Modal from "./Modal";
+import { useStore } from "../context/StoreContext.jsx";
+import Modal from "../components/Modal";
 import "../styles/TabClientes.css";
 
 const EMPTY = { nombre: "", email: "", telefono: "", ciudad: "" };

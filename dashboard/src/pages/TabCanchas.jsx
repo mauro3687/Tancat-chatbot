@@ -1,9 +1,9 @@
-// src/components/TabCanchas.jsx — Gestión visual de canchas y disponibilidad
+// src/pages/TabCanchas.jsx — Gestión visual de canchas y disponibilidad
 import { useState, useMemo, useCallback } from "react";
-import { useStore } from "../data/store.jsx";
+import { useStore } from "../context/StoreContext.jsx";
 import { CANCHAS as CANCHAS_BASE, LOCALES } from "../data/canchas.js";
-import Modal from "./Modal";
-import KpisCanchas from "./kpis/KpisCanchas.jsx";
+import Modal from "../components/Modal";
+import KpisCanchas from "../components/kpis/KpisCanchas.jsx";
 import "../styles/TabCanchas.css";
 
 const HORAS = Array.from({ length: 14 }, (_, i) => `${String(8 + i).padStart(2, "0")}:00`);
