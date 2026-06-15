@@ -11,8 +11,28 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  z-index: 100;
+  z-index: 200;
   overflow: hidden;
+  transition: transform 0.25s ease;
+}
+
+.sidebar-backdrop { display: none; }
+
+/* ── Menú móvil (tablet / celular) ─────────────────────────────────── */
+@media (max-width: 900px) {
+  .sidebar {
+    transform: translateX(-100%);
+    box-shadow: 8px 0 28px rgba(0, 0, 0, 0.25);
+  }
+  .sidebar.mobile-open { transform: translateX(0); }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 190;
+  }
 }
 
 .sidebar-logo {
@@ -24,15 +44,9 @@
 }
 
 .logo-mark {
-  width: 36px; height: 36px;
-  border-radius: 9px;
-  background: var(--accent);
-  color: #003328;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 13px;
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
   flex-shrink: 0;
 }
 
@@ -76,7 +90,7 @@
   text-align: left;
 }
 
-.nav-item:hover         { background: rgba(255, 255, 255, 0.04); color: var(--text-primary); }
+.nav-item:hover         { background: var(--overlay-04); color: var(--text-primary); }
 .nav-item.active        { background: var(--accent-muted); color: var(--accent); font-weight: 500; }
 
 .nav-icon               { width: 17px; height: 17px; flex-shrink: 0; opacity: 0.65; transition: opacity 0.12s; }

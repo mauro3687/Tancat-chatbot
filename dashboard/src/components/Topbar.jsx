@@ -1,4 +1,5 @@
 // src/components/Topbar.jsx
+import ThemeToggle from "./ThemeToggle.jsx";
 import "../styles/Topbar.css";
 
 const TAB_LABELS = {
@@ -13,7 +14,7 @@ const TAB_LABELS = {
   configuracion: "Configuración",
 };
 
-export default function Topbar({ activeTab }) {
+export default function Topbar({ activeTab, onMenuClick }) {
   const now = new Date();
   const fecha = now.toLocaleDateString("es-AR", {
     weekday: "long",
@@ -25,16 +26,26 @@ export default function Topbar({ activeTab }) {
 
   return (
     <header className="topbar">
-      <div>
-        <div className="topbar-title">{TAB_LABELS[activeTab] ?? "Panel Administrativo"}</div>
-        <div className="topbar-date">{fechaCap} · {hora}</div>
+      <div className="topbar-left">
+        <button className="topbar-menu-btn" onClick={onMenuClick} aria-label="Abrir menú">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+        <div>
+          <div className="topbar-title">{TAB_LABELS[activeTab] ?? "Panel Administrativo"}</div>
+          <div className="topbar-date">{fechaCap} · {hora}</div>
+        </div>
       </div>
 
       <div className="topbar-right">
         <div className="badge-live">
           <span className="live-dot" />
-          En vivo
+          <span className="badge-live-text">En vivo</span>
         </div>
+        <ThemeToggle />
       </div>
     </header>
   );

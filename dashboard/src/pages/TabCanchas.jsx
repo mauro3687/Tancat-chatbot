@@ -318,8 +318,11 @@ function ModalNuevaCancha({ todasLasCanchas, sedesPermitidas, onSave, onClose })
     if (!form.nombre.trim())            e.nombre        = "El nombre es obligatorio";
     if (!form.deporte)                  e.deporte       = "Elegí un tipo de cancha";
     if (!form.localId)                  e.localId       = "Elegí una sede";
-    if (!form.precioPorHora || Number(form.precioPorHora) <= 0)
-                                        e.precioPorHora = "Debe ser mayor a $0";
+    const precio = Number(form.precioPorHora);
+    if (!form.precioPorHora || isNaN(precio) || precio <= 0)
+                                        e.precioPorHora = "Ingresá un precio válido mayor a $0";
+    if (form.horaApertura && form.horaCierre && form.horaApertura >= form.horaCierre)
+                                        e.horaCierre    = "La hora de cierre debe ser posterior a la de apertura";
     const dup = todasLasCanchas.find(
       (c) =>
         c.nombre.trim().toLowerCase() === form.nombre.trim().toLowerCase() &&
@@ -363,6 +366,7 @@ function ModalNuevaCancha({ todasLasCanchas, sedesPermitidas, onSave, onClose })
           <input
             className={`form-input${errors.nombre ? " input-error" : ""}`}
             placeholder='Ej: "Pádel 3", "Básquet B"'
+            maxLength={40}
             value={form.nombre}
             onChange={(e) => set("nombre", e.target.value)}
           />
@@ -434,7 +438,8 @@ function ModalNuevaCancha({ todasLasCanchas, sedesPermitidas, onSave, onClose })
 
         <div className="form-group">
           <label className="form-label">Hora cierre</label>
-          <input type="time" className="form-input" value={form.horaCierre} onChange={(e) => set("horaCierre", e.target.value)} />
+          <input type="time" className={`form-input${errors.horaCierre ? " input-error" : ""}`} value={form.horaCierre} onChange={(e) => set("horaCierre", e.target.value)} />
+          {errors.horaCierre && <span className="form-error">{errors.horaCierre}</span>}
         </div>
       </div>
 

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import "../styles/Sidebar.css";
 import { useStore } from "../context/StoreContext.jsx";
+import logoIcon from "../assets/images/logo-tancat-icon.png";
 
 const icons = {
   canchas: (
@@ -112,9 +113,14 @@ const ROL_LABEL = {
   encargado: "Enc. Sucursal",
 };
 
-export default function Sidebar({ activeTab, setActiveTab, tabsPermitidos }) {
+export default function Sidebar({ activeTab, setActiveTab, tabsPermitidos, mobileOpen, onClose }) {
   const { currentUser, logout, reservas, prestamos, stock } = useStore();
   const [confirmLogout, setConfirmLogout] = useState(false);
+
+  const handleTabClick = (id) => {
+    setActiveTab(id);
+    onClose?.();
+  };
 
   const initials = currentUser?.nombre
     ?.split(" ")
@@ -134,9 +140,11 @@ export default function Sidebar({ activeTab, setActiveTab, tabsPermitidos }) {
   };
 
   return (
-    <aside className="sidebar">
+    <>
+      {mobileOpen && <div className="sidebar-backdrop" onClick={onClose} />}
+      <aside className={`sidebar ${mobileOpen ? "mobile-open" : ""}`}>
       <div className="sidebar-logo">
-        <div className="logo-mark">TC</div>
+        <img className="logo-mark" src={logoIcon} alt="TanCat" />
         <div>
           <div className="logo-text">TanCat</div>
           <div className="logo-sub">Panel Admin</div>
@@ -147,19 +155,19 @@ export default function Sidebar({ activeTab, setActiveTab, tabsPermitidos }) {
       {(kpiReservasPendientes > 0 || kpiPrestamosActivos > 0 || kpiStockCritico > 0) && (
         <div className="sidebar-kpis">
           {kpiReservasPendientes > 0 && (
-            <button className="sidebar-kpi-chip" onClick={() => setActiveTab("reservas")}
+            <button className="sidebar-kpi-chip" onClick={() => handleTabClick("reservas")}
               style={{ "--kc": "var(--status-warn-text)", "--kb": "var(--status-warn-bg)" }}>
               {kpiReservasPendientes} pendiente{kpiReservasPendientes !== 1 ? "s" : ""}
             </button>
           )}
           {kpiPrestamosActivos > 0 && (
-            <button className="sidebar-kpi-chip" onClick={() => setActiveTab("inventario")}
+            <button className="sidebar-kpi-chip" onClick={() => handleTabClick("inventario")}
               style={{ "--kc": "var(--status-warn-text)", "--kb": "var(--status-warn-bg)" }}>
               {kpiPrestamosActivos} préstamo{kpiPrestamosActivos !== 1 ? "s" : ""}
             </button>
           )}
           {kpiStockCritico > 0 && (
-            <button className="sidebar-kpi-chip" onClick={() => setActiveTab("inventario")}
+            <button className="sidebar-kpi-chip" onClick={() => handleTabClick("inventario")}
               style={{ "--kc": "var(--status-error-text)", "--kb": "var(--status-error-bg)" }}>
               ⚠ {kpiStockCritico} stock crítico
             </button>
@@ -182,7 +190,7 @@ export default function Sidebar({ activeTab, setActiveTab, tabsPermitidos }) {
                   <button
                     key={item.id}
                     className={`nav-item ${activeTab === item.id ? "active" : ""}`}
-                    onClick={() => setActiveTab(item.id)}
+                    onClick={() => handleTabClick(item.id)}
                   >
                     {icons[item.id] ?? <span className="icon-placeholder" />}
                     {item.text}
@@ -237,6 +245,7 @@ export default function Sidebar({ activeTab, setActiveTab, tabsPermitidos }) {
           </div>
         )}
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }

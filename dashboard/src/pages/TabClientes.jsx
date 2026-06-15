@@ -113,24 +113,39 @@ export default function TabClientes() {
   // ── Validación alta / edición ─────────────────────────────────────────────
   const validate = () => {
     const e = {};
-    if (!form.nombre.trim()) e.nombre = "El nombre es obligatorio";
+    const nombre = form.nombre.trim();
+    if (!nombre) e.nombre = "El nombre es obligatorio";
+    else if (nombre.length < 2) e.nombre = "El nombre es demasiado corto";
+    else if (!/^[A-Za-zÁÉÍÓÚÑÜáéíóúñü.'\- ]+$/.test(nombre)) e.nombre = "El nombre solo puede contener letras y espacios";
+
     if (form.email.trim()) {
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Email inválido";
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) e.email = "Email inválido";
       else {
         const editId = modal?.mode === "edit" ? modal.data.id : null;
         const dup = clientes.find((c) => c.id !== editId && c.email?.toLowerCase() === form.email.trim().toLowerCase());
         if (dup) e.email = "Ya existe un cliente con ese email";
       }
     }
-    if (!form.telefono.trim()) e.telefono = "El teléfono es obligatorio";
+
+    const telefono = form.telefono.trim();
+    if (!telefono) e.telefono = "El teléfono es obligatorio";
+    else if (!/^[0-9+\-\s()]+$/.test(telefono)) e.telefono = "El teléfono solo puede contener números, espacios y + - ( )";
+    else if (telefono.replace(/[^0-9]/g, "").length < 6) e.telefono = "El teléfono debe tener al menos 6 dígitos";
+
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
   const handleSave = () => {
     if (!validate()) return;
-    if (modal.mode === "add") addCliente(form);
-    else updateCliente(modal.data.id, form);
+    const data = {
+      nombre:   form.nombre.trim(),
+      email:    form.email.trim(),
+      telefono: form.telefono.trim(),
+      ciudad:   form.ciudad,
+    };
+    if (modal.mode === "add") addCliente(data);
+    else updateCliente(modal.data.id, data);
     closeModal();
   };
 
@@ -287,12 +302,12 @@ export default function TabClientes() {
       {(modal?.mode === "add" || modal?.mode === "edit") && (
         <Modal title={modal.mode === "add" ? "Nuevo cliente" : `Editar — ${modal.data.nombre}`} onClose={closeModal}>
           <div className="form-grid">
-            {[["nombre",   "Nombre completo *", "text",  "Juan Pérez"],
-              ["email",    "Email",             "email", "juan@email.com"],
-              ["telefono", "Teléfono *",        "text",  "351-000-0000"]].map(([k, label, type, ph]) => (
+            {[["nombre",   "Nombre completo *", "text",  "Juan Pérez",      60],
+              ["email",    "Email",             "email", "juan@email.com",  80],
+              ["telefono", "Teléfono *",        "text",  "351-000-0000",    20]].map(([k, label, type, ph, maxLen]) => (
               <div key={k} className="form-group">
                 <label className="form-label">{label}</label>
-                <input className={`form-input ${errors[k] ? "input-error" : ""}`} type={type} placeholder={ph} value={form[k]} onChange={(e) => setField(k, e.target.value)} />
+                <input className={`form-input ${errors[k] ? "input-error" : ""}`} type={type} placeholder={ph} maxLength={maxLen} value={form[k]} onChange={(e) => setField(k, e.target.value)} />
                 {errors[k] && <span className="form-error">{errors[k]}</span>}
               </div>
             ))}

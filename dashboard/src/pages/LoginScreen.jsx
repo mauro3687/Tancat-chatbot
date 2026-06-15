@@ -1,6 +1,7 @@
 // src/pages/LoginScreen.jsx
 import { useState } from "react";
 import { useStore, USUARIOS } from "../context/StoreContext.jsx";
+import ThemeToggle from "../components/ThemeToggle.jsx";
 import logoTancat from "../assets/images/logo-tancat.png";
 import "../styles/LoginScreen.css";
 
@@ -28,6 +29,8 @@ export default function LoginScreen() {
   return (
     <div className="login-overlay">
 
+      <ThemeToggle className="login-theme-toggle" />
+
       <div className="login-gradient" />
 
       <div className="login-wrapper">
@@ -51,7 +54,7 @@ export default function LoginScreen() {
                 <label className="login-label">Usuario</label>
                 <div className="login-input-wrap">
                   <svg className="login-icon-left"
-                    width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#555C72" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                     <circle cx="12" cy="7" r="4"/>
                   </svg>
@@ -65,7 +68,7 @@ export default function LoginScreen() {
                     ))}
                   </select>
                   <svg className="login-icon-right"
-                    width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#555C72" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="6 9 12 15 18 9"/>
                   </svg>
                 </div>
@@ -76,7 +79,7 @@ export default function LoginScreen() {
                 <label className="login-label">Contraseña</label>
                 <div className="login-input-wrap">
                   <svg className="login-icon-left"
-                    width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#555C72" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                     <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                   </svg>

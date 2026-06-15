@@ -96,6 +96,123 @@
   --promo-new-bg:        rgba(0, 196, 154, 0.10);
   --promo-new-text:      #00C49A;
   --promo-new-accent:    rgba(0, 196, 154, 0.25);
+
+  /* ── Overlays — capas translúcidas sobre el fondo (bordes, hovers) ─
+     En tema oscuro son blancos; en tema claro se redefinen en negro.  */
+  --overlay-02:  rgba(255, 255, 255, 0.02);
+  --overlay-025: rgba(255, 255, 255, 0.025);
+  --overlay-03:  rgba(255, 255, 255, 0.03);
+  --overlay-04:  rgba(255, 255, 255, 0.04);
+  --overlay-05:  rgba(255, 255, 255, 0.05);
+  --overlay-06:  rgba(255, 255, 255, 0.06);
+  --overlay-07:  rgba(255, 255, 255, 0.07);
+  --overlay-08:  rgba(255, 255, 255, 0.08);
+  --overlay-10:  rgba(255, 255, 255, 0.10);
+  --overlay-15:  rgba(255, 255, 255, 0.15);
+  --overlay-16:  rgba(255, 255, 255, 0.16);
+  --overlay-25:  rgba(255, 255, 255, 0.25);
+  --overlay-40:  rgba(255, 255, 255, 0.40);
+
+  /* Etiquetas de texto sobre gráficos (barras, áreas) */
+  --chart-label: rgba(255, 255, 255, 0.85);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   TANCAT — Tema claro
+══════════════════════════════════════════════════════════════════ */
+[data-theme="light"] {
+  /* Canvas (page-body) más gris para no "encandilar"; sidebar y tarjetas
+     un escalón más claras cada una, así se distingue dónde empieza
+     cada sección sin depender solo de los bordes.                     */
+  --bg-base:        #E2E6EC;
+  --bg-sidebar:     #EDF0F4;
+  --bg-card:        #F7F9FB;
+  --bg-input:       #E2E6EC;
+
+  --text-primary:   #1B1E27;
+  --text-secondary: #5B6275;
+  --text-muted:     #9AA0B4;
+
+  --border:         rgba(0, 0, 0, 0.09);
+  --border-strong:  rgba(0, 0, 0, 0.16);
+
+  /* Aliases de compatibilidad */
+  --gray-50:        #E2E6EC;
+  --gray-100:       #F7F9FB;
+  --gray-200:       rgba(0, 0, 0, 0.09);
+  --gray-400:       #9AA0B4;
+  --gray-600:       #5B6275;
+  --gray-800:       #1B1E27;
+
+  /* ── Acentos y colores de estado — versiones suaves para tema claro:
+     más oscuras que el tema oscuro (para que el texto se lea sobre
+     fondos claros) pero sin llegar a tonos demasiado saturados/intensos. */
+  --accent:         #00966B;
+  --accent-hover:   #007A56;
+  --accent-muted:   rgba(0, 150, 107, 0.10);
+  --accent-border:  rgba(0, 150, 107, 0.20);
+
+  --red:            #D1455C;
+  --red-bg:         rgba(209, 69, 92, 0.10);
+  --amber:          #B5720A;
+  --amber-bg:       rgba(181, 114, 10, 0.10);
+  --blue:           #3F6FDB;
+  --blue-bg:        rgba(63, 111, 219, 0.10);
+
+  --green:          #00966B;
+  --green-light:    rgba(0, 150, 107, 0.10);
+  --green-dark:     #00966B;
+  --ambar-dark:     #B5720A;
+  --amber-light:    rgba(181, 114, 10, 0.10);
+  --red-light:      rgba(209, 69, 92, 0.10);
+  --blue-light:     rgba(63, 111, 219, 0.10);
+
+  --status-ok-bg:        rgba(0, 150, 107, 0.10);
+  --status-ok-text:      #00966B;
+  --status-ok-border:    rgba(0, 150, 107, 0.22);
+
+  --status-warn-bg:      rgba(181, 114, 10, 0.10);
+  --status-warn-text:    #B5720A;
+  --status-warn-border:  rgba(181, 114, 10, 0.22);
+
+  --status-error-bg:     rgba(209, 69, 92, 0.10);
+  --status-error-text:   #D1455C;
+  --status-error-border: rgba(209, 69, 92, 0.22);
+
+  --status-neutral-bg:     rgba(0, 0, 0, 0.04);
+  --status-neutral-text:   #6B7184;
+  --status-neutral-border: rgba(0, 0, 0, 0.10);
+
+  --promo-active-bg:     rgba(63, 111, 219, 0.08);
+  --promo-active-text:   #3F6FDB;
+  --promo-active-accent: rgba(63, 111, 219, 0.22);
+
+  --promo-offer-bg:      rgba(181, 114, 10, 0.08);
+  --promo-offer-text:    #B5720A;
+  --promo-offer-accent:  rgba(181, 114, 10, 0.22);
+
+  --promo-new-bg:        rgba(0, 150, 107, 0.08);
+  --promo-new-text:      #00966B;
+  --promo-new-accent:    rgba(0, 150, 107, 0.22);
+
+  --promo-expired-bg:     rgba(0, 0, 0, 0.03);
+  --promo-expired-accent: rgba(0, 0, 0, 0.08);
+
+  --overlay-02:  rgba(0, 0, 0, 0.035);
+  --overlay-025: rgba(0, 0, 0, 0.04);
+  --overlay-03:  rgba(0, 0, 0, 0.045);
+  --overlay-04:  rgba(0, 0, 0, 0.05);
+  --overlay-05:  rgba(0, 0, 0, 0.06);
+  --overlay-06:  rgba(0, 0, 0, 0.07);
+  --overlay-07:  rgba(0, 0, 0, 0.08);
+  --overlay-08:  rgba(0, 0, 0, 0.08);
+  --overlay-10:  rgba(0, 0, 0, 0.10);
+  --overlay-15:  rgba(0, 0, 0, 0.13);
+  --overlay-16:  rgba(0, 0, 0, 0.14);
+  --overlay-25:  rgba(0, 0, 0, 0.20);
+  --overlay-40:  rgba(0, 0, 0, 0.35);
+
+  --chart-label: rgba(30, 33, 45, 0.75);
 }
 
 /* ── Reset ─────────────────────────────────────────────────────── */
@@ -128,19 +245,18 @@ body {
 
 /* ── Responsive ─────────────────────────────────────────────────── */
 @media (max-width: 900px) {
+  .main-content { margin-left: 0; }
   .metrics-grid { grid-template-columns: repeat(2, 1fr); }
   .charts-row   { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 600px) {
-  .sidebar      { display: none; }
-  .main-content { margin-left: 0; }
-  .metrics-grid { grid-template-columns: 1fr 1fr; }
-  .page-body    { padding: 1rem; }
+  .metrics-grid { grid-template-columns: 1fr; }
+  .page-body    { padding: 1rem 0.85rem 2rem; }
 }
 
 /* ── Scrollbar ──────────────────────────────────────────────────── */
 ::-webkit-scrollbar       { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+::-webkit-scrollbar-thumb { background: var(--overlay-08); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--overlay-15); }

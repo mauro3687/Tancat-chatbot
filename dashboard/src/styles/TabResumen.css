@@ -152,3 +152,12 @@
 .turno-cliente { font-weight: 600; color: var(--text-primary); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .turno-cancha  { font-size: 11px; color: var(--text-muted); }
 .turno-monto   { font-size: 12px; font-weight: 600; color: var(--text-primary); min-width: 70px; text-align: right; }
+
+/* ── Responsive ─────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .chart-barras-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+  .turno-deporte { display: none; }
+}

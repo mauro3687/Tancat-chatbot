@@ -236,7 +236,7 @@ function SeccionPrestamos() {
 
   const validatePrestamo = () => {
     const e = {};
-    if (form.cantidad < 1) e.cantidad = "Mínimo 1";
+    if (!Number.isInteger(form.cantidad) || form.cantidad < 1) e.cantidad = "Mínimo 1";
     if (form.stockItemId) {
       const item = stock.find((s) => s.id === form.stockItemId);
       if (item && form.cantidad > item.cantidad)
@@ -270,14 +270,18 @@ function SeccionPrestamos() {
     const e = {};
     if (!eqForm.nombre.trim())        e.nombre = "El nombre es obligatorio";
     if (!eqForm.max || eqForm.max <= 0) e.max  = "Debe ser mayor a 0";
+    if (eqForm.cantidad < 0)          e.cantidad = "No puede ser negativo";
+    else if (eqForm.max > 0 && eqForm.cantidad > eqForm.max)
+                                      e.cantidad = "No puede superar el total (máx)";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
   const handleSaveEq = () => {
     if (!validateEq()) return;
-    if (modal?.mode === "eq-add") addStock({ ...eqForm, categoria: "prestamo" });
-    else updateStock(modal.data.id, { ...eqForm });
+    const data = { ...eqForm, nombre: eqForm.nombre.trim() };
+    if (modal?.mode === "eq-add") addStock({ ...data, categoria: "prestamo" });
+    else updateStock(modal.data.id, data);
     setModal(null);
   };
 
@@ -288,7 +292,7 @@ function SeccionPrestamos() {
         <KpiChip label="Disponibles"  val={totalDisponible} color="var(--status-ok-text)"    bg="var(--status-ok-bg)"    Icon={IcoCheck}  />
         <KpiChip label="En préstamo"  val={totalEnUso}      color="var(--status-warn-text)"  bg="var(--status-warn-bg)"  Icon={IcoUsers}  />
         <KpiChip label="Perdidos"     val={perdidos}        color="var(--status-error-text)" bg="var(--status-error-bg)" Icon={IcoX}      />
-        <KpiChip label="Tipos"        val={equipo.length}   color="var(--text-secondary)"    bg="rgba(255,255,255,0.04)" Icon={IcoBox}    />
+        <KpiChip label="Tipos"        val={equipo.length}   color="var(--text-secondary)"    bg="var(--overlay-04)" Icon={IcoBox}    />
       </div>
 
       {/* Catálogo de equipamiento */}
@@ -417,7 +421,7 @@ function SeccionPrestamos() {
                 className={`form-input ${errors.cantidad ? "input-error" : ""}`}
                 type="number" min="1"
                 value={form.cantidad}
-                onChange={(e) => setField("cantidad", parseInt(e.target.value) || 1)}
+                onChange={(e) => setField("cantidad", Math.max(1, parseInt(e.target.value) || 1))}
               />
               {errors.cantidad && <span className="form-error">{errors.cantidad}</span>}
             </div>
@@ -457,6 +461,7 @@ function SeccionPrestamos() {
               <input
                 className={`form-input ${errors.nombre ? "input-error" : ""}`}
                 value={eqForm.nombre}
+                maxLength={60}
                 onChange={(e) => setEqField("nombre", e.target.value)}
                 placeholder="Ej: Pelota de pádel"
               />
@@ -464,15 +469,16 @@ function SeccionPrestamos() {
             </div>
             <div className="form-group">
               <label className="form-label">Disponibles</label>
-              <input className="form-input" type="number" min="0" value={eqForm.cantidad}
-                onChange={(e) => setEqField("cantidad", parseInt(e.target.value) || 0)} />
+              <input className={`form-input ${errors.cantidad ? "input-error" : ""}`} type="number" min="0" value={eqForm.cantidad}
+                onChange={(e) => setEqField("cantidad", Math.max(0, parseInt(e.target.value) || 0))} />
+              {errors.cantidad && <span className="form-error">{errors.cantidad}</span>}
             </div>
             <div className="form-group">
               <label className="form-label">Total (máx) *</label>
               <input
                 className={`form-input ${errors.max ? "input-error" : ""}`}
                 type="number" min="1" value={eqForm.max}
-                onChange={(e) => setEqField("max", parseInt(e.target.value) || 1)}
+                onChange={(e) => setEqField("max", Math.max(1, parseInt(e.target.value) || 1))}
               />
               {errors.max && <span className="form-error">{errors.max}</span>}
             </div>
@@ -556,15 +562,19 @@ function SeccionVenta() {
     const e = {};
     if (!form.nombre.trim())        e.nombre         = "El nombre es obligatorio";
     if (!form.max || form.max <= 0) e.max             = "Debe ser mayor a 0";
+    if (form.cantidad < 0)          e.cantidad        = "El stock actual no puede ser negativo";
+    else if (form.max > 0 && form.cantidad > form.max)
+                                    e.cantidad        = "El stock actual no puede superar el máximo";
     if (!form.precioUnitario || form.precioUnitario <= 0)
                                     e.precioUnitario  = "El precio de venta debe ser mayor a $0";
+    if (form.precioCosto < 0)       e.precioCosto     = "El costo no puede ser negativo";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
   const handleSave = () => {
     if (!validate()) return;
-    const data = { ...form, categoria: "venta", margen };
+    const data = { ...form, nombre: form.nombre.trim(), categoria: "venta", margen };
     if (modal?.mode === "add") addStock(data);
     else updateStock(modal.data.id, data);
     setModal(null);
@@ -587,6 +597,7 @@ function SeccionVenta() {
       if (pu <= 0)       { lineErrors.push(`Línea ${i + 1} (${nombre}): precio de venta inválido`); continue; }
       if (isNaN(mx) || mx <= 0) { lineErrors.push(`Línea ${i + 1} (${nombre}): máximo inválido`); continue; }
       if (isNaN(qty) || qty < 0) { lineErrors.push(`Línea ${i + 1} (${nombre}): cantidad inválida`); continue; }
+      if (qty > mx) { lineErrors.push(`Línea ${i + 1} (${nombre}): la cantidad no puede superar el máximo`); continue; }
       try {
         await addStock({
           nombre, cantidad: qty, max: mx,
@@ -711,6 +722,7 @@ function SeccionVenta() {
               <input
                 className={`form-input ${errors.nombre ? "input-error" : ""}`}
                 value={form.nombre}
+                maxLength={60}
                 onChange={(e) => setField("nombre", e.target.value)}
                 placeholder="Ej: Pelota de pádel"
               />
@@ -718,15 +730,16 @@ function SeccionVenta() {
             </div>
             <div className="form-group">
               <label className="form-label">Stock actual</label>
-              <input className="form-input" type="number" min="0" value={form.cantidad}
-                onChange={(e) => setField("cantidad", parseInt(e.target.value) || 0)} />
+              <input className={`form-input ${errors.cantidad ? "input-error" : ""}`} type="number" min="0" value={form.cantidad}
+                onChange={(e) => setField("cantidad", Math.max(0, parseInt(e.target.value) || 0))} />
+              {errors.cantidad && <span className="form-error">{errors.cantidad}</span>}
             </div>
             <div className="form-group">
               <label className="form-label">Máximo *</label>
               <input
                 className={`form-input ${errors.max ? "input-error" : ""}`}
                 type="number" min="1" value={form.max}
-                onChange={(e) => setField("max", parseInt(e.target.value) || 1)}
+                onChange={(e) => setField("max", Math.max(1, parseInt(e.target.value) || 1))}
               />
               {errors.max && <span className="form-error">{errors.max}</span>}
             </div>
@@ -739,13 +752,14 @@ function SeccionVenta() {
             <div className="form-group">
               <label className="form-label">Precio de venta ($) *</label>
               <input className={`form-input ${errors.precioUnitario ? "input-error" : ""}`} type="number" min="1" value={form.precioUnitario}
-                onChange={(e) => setField("precioUnitario", parseFloat(e.target.value) || 0)} />
+                onChange={(e) => setField("precioUnitario", Math.max(0, parseFloat(e.target.value) || 0))} />
               {errors.precioUnitario && <span className="form-error">{errors.precioUnitario}</span>}
             </div>
             <div className="form-group">
               <label className="form-label">Costo ($)</label>
-              <input className="form-input" type="number" min="0" value={form.precioCosto}
-                onChange={(e) => setField("precioCosto", parseFloat(e.target.value) || 0)} />
+              <input className={`form-input ${errors.precioCosto ? "input-error" : ""}`} type="number" min="0" value={form.precioCosto}
+                onChange={(e) => setField("precioCosto", Math.max(0, parseFloat(e.target.value) || 0))} />
+              {errors.precioCosto && <span className="form-error">{errors.precioCosto}</span>}
             </div>
             {margen > 0 && (
               <div className="form-group form-full">

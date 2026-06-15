@@ -13,6 +13,7 @@ export default function TabConfiguracion() {
   const [form, setForm]     = useState({ ...config });
   const [saved, setSaved]   = useState(false);
   const [priceErrors, setPriceErrors] = useState({});
+  const [fieldErrors, setFieldErrors] = useState({});
   // BUG-021: sincronizar form cuando config llega desde Firestore (solo la primera vez)
   const hasSynced = useRef(false);
   useEffect(() => {
@@ -22,10 +23,24 @@ export default function TabConfiguracion() {
     }
   }, [config]);
 
-  const setField = (k, v) => { if (!readOnly) setForm((f) => ({ ...f, [k]: v })); };
+  const setField = (k, v) => {
+    if (readOnly) return;
+    setForm((f) => ({ ...f, [k]: v }));
+    setFieldErrors((fe) => (fe[k] ? { ...fe, [k]: undefined } : fe));
+  };
   const setPrecio = (dep, v) => {
     if (!readOnly)
-      setForm((f) => ({ ...f, precios: { ...(f.precios || {}), [dep]: parseInt(v) || 0 } }));
+      setForm((f) => ({ ...f, precios: { ...(f.precios || {}), [dep]: Math.max(0, parseInt(v) || 0) } }));
+  };
+  const setSena = (v) => {
+    if (readOnly) return;
+    const n = parseInt(v, 10);
+    setForm((f) => ({ ...f, sena: isNaN(n) ? 0 : Math.min(100, Math.max(0, n)) }));
+  };
+  const setCancelacion = (v) => {
+    if (readOnly) return;
+    const n = parseInt(v, 10);
+    setForm((f) => ({ ...f, cancelacion: isNaN(n) ? 0 : Math.max(0, n) }));
   };
 
   const handleSave = () => {
@@ -35,9 +50,32 @@ export default function TabConfiguracion() {
     DEPORTES.forEach((dep) => {
       if (!precios[dep] || precios[dep] <= 0) pe[dep] = "Debe ser mayor a $0";
     });
-    if (Object.keys(pe).length > 0) { setPriceErrors(pe); return; }
+
+    const fe = {};
+    if (!form.nombre?.trim()) fe.nombre = "El nombre comercial es obligatorio";
+    if (form.email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()))
+      fe.email = "Email inválido";
+    if (form.telefono?.trim() && !/^[0-9+\-\s()]+$/.test(form.telefono.trim()))
+      fe.telefono = "El teléfono solo puede contener números, espacios y + - ( )";
+    if (form.cuit?.trim() && !/^\d{2}-?\d{8}-?\d{1}$/.test(form.cuit.trim()))
+      fe.cuit = "Formato esperado: 30-00000000-0";
+
+    if (Object.keys(pe).length > 0 || Object.keys(fe).length > 0) {
+      setPriceErrors(pe);
+      setFieldErrors(fe);
+      return;
+    }
     setPriceErrors({});
-    updateConfig(form);
+    setFieldErrors({});
+    updateConfig({
+      ...form,
+      nombre:      form.nombre?.trim()      ?? "",
+      razonSocial: form.razonSocial?.trim() ?? "",
+      cuit:        form.cuit?.trim()        ?? "",
+      direccion:   form.direccion?.trim()   ?? "",
+      email:       form.email?.trim()       ?? "",
+      telefono:    form.telefono?.trim()    ?? "",
+    });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
@@ -49,17 +87,19 @@ export default function TabConfiguracion() {
     </div>
   );
 
-  const Field = ({ label, k, type = "text", placeholder = "" }) => (
+  const Field = ({ label, k, type = "text", placeholder = "", maxLength }) => (
     <div className="form-group">
       <label className="form-label">{label}</label>
       <input
-        className="form-input"
+        className={`form-input ${fieldErrors[k] ? "input-error" : ""}`}
         type={type}
         value={form[k] ?? ""}
         onChange={(e) => setField(k, e.target.value)}
         placeholder={placeholder}
+        maxLength={maxLength}
         disabled={readOnly}
       />
+      {fieldErrors[k] && <span className="form-error">{fieldErrors[k]}</span>}
     </div>
   );
 
@@ -85,12 +125,12 @@ export default function TabConfiguracion() {
       </div>
 
       <Section title="Datos del establecimiento">
-        <Field label="Nombre comercial" k="nombre" placeholder="TanCat" />
-        <Field label="Razón social" k="razonSocial" placeholder="TanCat S.R.L." />
-        <Field label="CUIT" k="cuit" placeholder="30-00000000-0" />
-        <Field label="Dirección" k="direccion" placeholder="Calle 123, Córdoba" />
-        <Field label="Email de contacto" k="email" type="email" placeholder="info@tancat.com.ar" />
-        <Field label="Teléfono" k="telefono" placeholder="351-000-0000" />
+        <Field label="Nombre comercial" k="nombre" placeholder="TanCat" maxLength={60} />
+        <Field label="Razón social" k="razonSocial" placeholder="TanCat S.R.L." maxLength={100} />
+        <Field label="CUIT" k="cuit" placeholder="30-00000000-0" maxLength={13} />
+        <Field label="Dirección" k="direccion" placeholder="Calle 123, Córdoba" maxLength={100} />
+        <Field label="Email de contacto" k="email" type="email" placeholder="info@tancat.com.ar" maxLength={80} />
+        <Field label="Teléfono" k="telefono" placeholder="351-000-0000" maxLength={20} />
       </Section>
 
       <Section title="Horarios de operación">
@@ -144,7 +184,7 @@ export default function TabConfiguracion() {
             min="0"
             max="100"
             value={form.sena ?? 30}
-            onChange={(e) => setField("sena", parseInt(e.target.value))}
+            onChange={(e) => setSena(e.target.value)}
             disabled={readOnly}
           />
           <span className="form-hint">
@@ -158,7 +198,7 @@ export default function TabConfiguracion() {
             type="number"
             min="0"
             value={form.cancelacion ?? 48}
-            onChange={(e) => setField("cancelacion", parseInt(e.target.value))}
+            onChange={(e) => setCancelacion(e.target.value)}
             disabled={readOnly}
           />
           <span className="form-hint">

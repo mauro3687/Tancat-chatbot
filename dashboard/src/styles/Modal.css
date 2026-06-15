@@ -63,6 +63,6 @@
   transition: background 0.12s, color 0.12s;
 }
 
-.modal-close:hover { background: rgba(255, 255, 255, 0.07); color: var(--text-primary); }
+.modal-close:hover { background: var(--overlay-07); color: var(--text-primary); }
 
 .modal-body { padding: 1.25rem 1.4rem 1.4rem; }

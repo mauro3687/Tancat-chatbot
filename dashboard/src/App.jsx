@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { StoreProvider, useStore } from "./context/StoreContext.jsx";
+import { ThemeProvider } from "./context/ThemeContext.jsx";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 import LoadingScreen from "./pages/LoadingScreen";
@@ -24,6 +25,7 @@ const TAB_PERMISOS = {
 
 function AppInner() {
   const [activeTab, setActiveTab] = useState("resumen");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { loading, currentUser } = useStore();
 
   if (!currentUser) return <LoginScreen />;
@@ -47,9 +49,15 @@ function AppInner() {
 
   return (
     <div className="app-layout">
-      <Sidebar activeTab={safeTab} setActiveTab={setActiveTab} tabsPermitidos={permitidos} />
+      <Sidebar
+        activeTab={safeTab}
+        setActiveTab={setActiveTab}
+        tabsPermitidos={permitidos}
+        mobileOpen={mobileNavOpen}
+        onClose={() => setMobileNavOpen(false)}
+      />
       <div className="main-content">
-        <Topbar activeTab={safeTab} />
+        <Topbar activeTab={safeTab} onMenuClick={() => setMobileNavOpen((o) => !o)} />
         <div className="page-body">
           {tabs[safeTab] ?? null}
         </div>
@@ -60,8 +68,10 @@ function AppInner() {
 
 export default function App() {
   return (
-    <StoreProvider>
-      <AppInner />
-    </StoreProvider>
+    <ThemeProvider>
+      <StoreProvider>
+        <AppInner />
+      </StoreProvider>
+    </ThemeProvider>
   );
 }

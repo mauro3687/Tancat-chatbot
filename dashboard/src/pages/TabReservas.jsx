@@ -46,6 +46,23 @@ function sedeLabel(id) {
   return LOCALES[id]?.nombre.replace("TanCat — ", "") ?? id;
 }
 
+const MESES_LARGO = [
+  "enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+];
+
+function getLunes(fechaStr) {
+  const d = new Date(fechaStr + "T00:00:00");
+  const dia = d.getDay();
+  const diff = dia === 0 ? -6 : 1 - dia;
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+
+function toISODate(d) {
+  return d.toISOString().split("T")[0];
+}
+
 function ModalDetalle({ reserva: r, clientes, onClose, onEdit }) {
   const c = clientes.find((cl) => cl.id === r.clienteId) || null;
   return (
@@ -120,6 +137,17 @@ export default function TabReservas() {
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState(EMPTY);
   const [errors, setErrors] = useState({});
+  const [view, setView] = useState("activas"); // "activas" | "historial"
+  const [expandedGroups, setExpandedGroups] = useState(new Set());
+
+  const toggleGroup = (key) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   const handleSedeChange = (sedeId) => {
     setActiveSede(sedeId);
@@ -129,8 +157,11 @@ export default function TabReservas() {
     setForm((f) => ({ ...f, canchaId: "", cancha: "", localId: "" }));
   };
 
-  const getPrecio = (dep) => config?.precios?.[dep] ?? PRECIOS[dep] ?? 0;
-  const senaPct = (config?.sena ?? 30) / 100;
+  const getPrecio = (dep) => {
+    const p = config?.precios?.[dep];
+    return Number.isFinite(p) && p > 0 ? p : (PRECIOS[dep] ?? 0);
+  };
+  const senaPct = (Number.isFinite(config?.sena) ? config.sena : 30) / 100;
 
   const clienteNombre = (r) => {
     if (r.clienteId) {
@@ -158,6 +189,56 @@ export default function TabReservas() {
   });
 
   const hoy = new Date().toISOString().split("T")[0];
+
+  const activas   = useMemo(() => filtered.filter((r) => r.fecha >= hoy), [filtered, hoy]);
+  const historial = useMemo(() => filtered.filter((r) => r.fecha < hoy), [filtered, hoy]);
+
+  // Agrupa el historial: el mes en curso se agrupa por semana (lunes a domingo),
+  // los meses ya finalizados se agrupan por mes completo.
+  const historialGrupos = useMemo(() => {
+    const hoyDate = new Date(hoy + "T00:00:00");
+    const currentYM = `${hoyDate.getFullYear()}-${String(hoyDate.getMonth() + 1).padStart(2, "0")}`;
+
+    const semanas = new Map();
+    const meses = new Map();
+
+    for (const r of historial) {
+      const [y, m] = r.fecha.split("-");
+      const ym = `${y}-${m}`;
+      if (ym === currentYM) {
+        const lunes = getLunes(r.fecha);
+        const domingo = new Date(lunes);
+        domingo.setDate(domingo.getDate() + 6);
+        const key = toISODate(lunes);
+        if (!semanas.has(key)) semanas.set(key, { key, tipo: "semana", inicio: lunes, fin: domingo, items: [] });
+        semanas.get(key).items.push(r);
+      } else {
+        if (!meses.has(ym)) meses.set(ym, { key: ym, tipo: "mes", year: parseInt(y), month: parseInt(m), items: [] });
+        meses.get(ym).items.push(r);
+      }
+    }
+
+    const gruposSemana = Array.from(semanas.values())
+      .sort((a, b) => b.inicio - a.inicio)
+      .map((g) => ({
+        ...g,
+        label: g.inicio.getMonth() === g.fin.getMonth()
+          ? `Semana del ${g.inicio.getDate()} al ${g.fin.getDate()} de ${MESES_LARGO[g.inicio.getMonth()]}`
+          : `Semana del ${g.inicio.getDate()} de ${MESES_LARGO[g.inicio.getMonth()]} al ${g.fin.getDate()} de ${MESES_LARGO[g.fin.getMonth()]}`,
+        items: [...g.items].sort((a, b) => b.fecha.localeCompare(a.fecha)),
+      }));
+
+    const gruposMes = Array.from(meses.values())
+      .sort((a, b) => (b.year - a.year) || (b.month - a.month))
+      .map((g) => ({
+        ...g,
+        label: `${MESES_LARGO[g.month - 1].charAt(0).toUpperCase()}${MESES_LARGO[g.month - 1].slice(1)} ${g.year}`,
+        items: [...g.items].sort((a, b) => b.fecha.localeCompare(a.fecha)),
+      }));
+
+    return [...gruposSemana, ...gruposMes];
+  }, [historial, hoy]);
+
   const kpisSede = useMemo(() => {
     const hoyActivas = reservasSede.filter((r) => r.fecha === hoy && r.estado !== "Cancelada");
     return {
@@ -281,7 +362,7 @@ export default function TabReservas() {
     if (!form.deporte)    e.deporte    = "Seleccioná un deporte";
     if (!form.canchaId)   e.canchaId   = "Seleccioná una cancha";
     if (!form.fecha)      e.fecha      = "Ingresá una fecha";
-    else if (form.fecha < hoyStr) e.fecha = "No se pueden crear reservas en fechas pasadas";
+    else if (!esEdicion && form.fecha < hoyStr) e.fecha = "No se pueden crear reservas en fechas pasadas";
     if (!form.horaInicio) e.horaInicio = "Seleccioná una hora de inicio";
 
     if (esEdicion && form.canchaId && form.fecha && form.horaInicio) {
@@ -368,6 +449,22 @@ export default function TabReservas() {
         ))}
       </div>
 
+      {/* Pestañas Activas / Historial */}
+      <div className="sede-tabs">
+        <button
+          className={`sede-tab${view === "activas" ? " active" : ""}`}
+          onClick={() => setView("activas")}
+        >
+          Activas <span className="badge-count">{activas.length}</span>
+        </button>
+        <button
+          className={`sede-tab${view === "historial" ? " active" : ""}`}
+          onClick={() => setView("historial")}
+        >
+          Historial <span className="badge-count">{historial.length}</span>
+        </button>
+      </div>
+
       <div className="card">
         <div className="filter-row">
           <input
@@ -383,39 +480,89 @@ export default function TabReservas() {
           <button className="btn" onClick={() => { setSearch(""); setFilterEstado(""); }}>Limpiar</button>
         </div>
 
-        <div className="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th><th>Cliente</th><th>Deporte</th><th>Cancha</th>
-                <th>Fecha</th><th>Horario</th><th>Monto</th><th>Estado</th><th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr><td colSpan={9} className="table-empty">No se encontraron reservas</td></tr>
-              ) : filtered.map((r) => (
-                <tr key={r.id}>
-                  <td><span className="mono">{r.id}</span></td>
-                  <td className="fw-500">{clienteNombre(r)}</td>
-                  <td>{r.deporte || r.servicio}</td>
-                  <td className="c-secondary-sm">{r.cancha || "—"}</td>
-                  <td>{formatFecha(r.fecha)}</td>
-                  <td className="c-muted-xs">{r.horario || "—"}</td>
-                  <td className="fw-600">{formatMonto(r.monto)}</td>
-                  <td><span className={`status ${STATUS_CLASS[r.estado]}`}>{r.estado}</span></td>
-                  <td>
-                    <div className="actions-row">
-                      <button className="btn btn-sm" onClick={() => openView(r)}>Ver</button>
-                      <button className="btn btn-sm" onClick={() => openEdit(r)}>Editar</button>
-                      <button className="btn btn-sm btn-icon-danger" onClick={() => openDelete(r)}>Eliminar</button>
-                    </div>
-                  </td>
+        {view === "activas" ? (
+          <div className="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th><th>Cliente</th><th>Deporte</th><th>Cancha</th>
+                  <th>Fecha</th><th>Horario</th><th>Monto</th><th>Estado</th><th>Acciones</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {activas.length === 0 ? (
+                  <tr><td colSpan={9} className="table-empty">No se encontraron reservas</td></tr>
+                ) : activas.map((r) => (
+                  <tr key={r.id}>
+                    <td><span className="mono">{r.id}</span></td>
+                    <td className="fw-500">{clienteNombre(r)}</td>
+                    <td>{r.deporte || r.servicio}</td>
+                    <td className="c-secondary-sm">{r.cancha || "—"}</td>
+                    <td>{formatFecha(r.fecha)}</td>
+                    <td className="c-muted-xs">{r.horario || "—"}</td>
+                    <td className="fw-600">{formatMonto(r.monto)}</td>
+                    <td><span className={`status ${STATUS_CLASS[r.estado]}`}>{r.estado}</span></td>
+                    <td>
+                      <div className="actions-row">
+                        <button className="btn btn-sm" onClick={() => openView(r)}>Ver</button>
+                        <button className="btn btn-sm" onClick={() => openEdit(r)}>Editar</button>
+                        <button className="btn btn-sm btn-icon-danger" onClick={() => openDelete(r)}>Eliminar</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : historialGrupos.length === 0 ? (
+          <div className="table-empty">No hay reservas en el historial</div>
+        ) : (
+          historialGrupos.map((g) => {
+            const abierto = expandedGroups.has(g.key);
+            return (
+              <div key={g.key} className="history-group">
+                <button className="history-group-header" onClick={() => toggleGroup(g.key)}>
+                  <span className="history-group-chevron">{abierto ? "▾" : "▸"}</span>
+                  <span className="history-group-title">{g.label}</span>
+                  <span className="badge-count">{g.items.length}</span>
+                </button>
+                {abierto && (
+                  <div className="table-wrapper">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>ID</th><th>Cliente</th><th>Deporte</th><th>Cancha</th>
+                          <th>Fecha</th><th>Horario</th><th>Monto</th><th>Estado</th><th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {g.items.map((r) => (
+                          <tr key={r.id}>
+                            <td><span className="mono">{r.id}</span></td>
+                            <td className="fw-500">{clienteNombre(r)}</td>
+                            <td>{r.deporte || r.servicio}</td>
+                            <td className="c-secondary-sm">{r.cancha || "—"}</td>
+                            <td>{formatFecha(r.fecha)}</td>
+                            <td className="c-muted-xs">{r.horario || "—"}</td>
+                            <td className="fw-600">{formatMonto(r.monto)}</td>
+                            <td><span className={`status ${STATUS_CLASS[r.estado]}`}>{r.estado}</span></td>
+                            <td>
+                              <div className="actions-row">
+                                <button className="btn btn-sm" onClick={() => openView(r)}>Ver</button>
+                                <button className="btn btn-sm" onClick={() => openEdit(r)}>Editar</button>
+                                <button className="btn btn-sm btn-icon-danger" onClick={() => openDelete(r)}>Eliminar</button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
       </div>
 
       {/* Modal Ver detalle */}
@@ -621,6 +768,7 @@ export default function TabReservas() {
               <textarea
                 className="form-input"
                 rows={2}
+                maxLength={300}
                 value={form.notas}
                 onChange={(e) => setField("notas", e.target.value)}
                 placeholder="Observaciones adicionales..."

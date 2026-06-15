@@ -70,9 +70,9 @@ function GaugeStockGlobal({ items }) {
             style={{ transition: "stroke-dashoffset 0.8s ease" }}
           />
           <text x={cx} y={cy - 6}  textAnchor="middle" fontSize="26" fontWeight="800" fill={color}>{pct}%</text>
-          <text x={cx} y={cy + 12} textAnchor="middle" fontSize="10" fill="#8B92A8">del máximo</text>
-          <text x={cx - radius + 2} y={cy + 18} textAnchor="middle" fontSize="9"  fill="#8B92A8">0%</text>
-          <text x={cx + radius - 2} y={cy + 18} textAnchor="middle" fontSize="9"  fill="#8B92A8">100%</text>
+          <text x={cx} y={cy + 12} textAnchor="middle" fontSize="10" fill="var(--text-secondary)">del máximo</text>
+          <text x={cx - radius + 2} y={cy + 18} textAnchor="middle" fontSize="9"  fill="var(--text-secondary)">0%</text>
+          <text x={cx + radius - 2} y={cy + 18} textAnchor="middle" fontSize="9"  fill="var(--text-secondary)">100%</text>
         </svg>
         <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 4, fontWeight: 500 }}>
           {totalActual.toLocaleString("es-AR")} u. de {totalMax.toLocaleString("es-AR")} u. máximas
@@ -188,7 +188,7 @@ function BarrasActualVsMax({ items }) {
           barGap={2}
           barCategoryGap="28%"
         >
-          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(255,255,255,0.06)" />
+          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--overlay-06)" />
           <XAxis type="number" tick={{ fontSize: 11 }} />
           <YAxis type="category" dataKey="nombre" width={120} tick={{ fontSize: 11 }} />
           <Tooltip
@@ -196,7 +196,7 @@ function BarrasActualVsMax({ items }) {
             contentStyle={{ fontSize: 12 }}
           />
           <Legend wrapperStyle={{ fontSize: 12 }} />
-          <Bar dataKey="Máximo" fill="rgba(255,255,255,0.07)" radius={[0, 4, 4, 0]} />
+          <Bar dataKey="Máximo" fill="var(--overlay-07)" radius={[0, 4, 4, 0]} />
           <Bar dataKey="Actual" radius={[0, 4, 4, 0]}>
             {data.map((entry, i) => (
               <Cell key={i} fill={getActualColor(entry.pct)} />

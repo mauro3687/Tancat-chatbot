@@ -142,7 +142,7 @@
   flex-shrink: 0;
 }
 
-.copy-btn:hover { background: rgba(255, 255, 255, 0.06); }
+.copy-btn:hover { background: var(--overlay-06); }
 
 .copy-btn-ok {
   background: rgba(29, 158, 117, 0.12);
@@ -320,4 +320,18 @@
 @keyframes fadeSlide {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Responsive ─────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .ia-analysis-grid { grid-template-columns: 1fr; }
+  .hashtag-kit-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 600px) {
+  .hashtag-kit-grid { grid-template-columns: 1fr; }
+  .ia-hor-label     { min-width: 100px; }
+  .contenido-card-header { flex-wrap: wrap; }
+  .cal-grid  { overflow-x: auto; }
+  .cal-row   { min-width: 560px; }
 }

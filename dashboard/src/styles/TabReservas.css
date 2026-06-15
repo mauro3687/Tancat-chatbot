@@ -21,3 +21,47 @@
   gap: 7px;
   margin-right: 4px;
 }
+
+/* ── Historial: grupos por semana / mes ───────────────────────────── */
+.history-group {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.history-group-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg-input);
+  border: none;
+  cursor: pointer;
+  font-family: "Inter", sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: left;
+  transition: background 0.12s;
+}
+
+.history-group-header:hover {
+  background: var(--accent-muted);
+}
+
+.history-group-chevron {
+  color: var(--text-muted);
+  font-size: 12px;
+  width: 12px;
+}
+
+.history-group-title {
+  flex: 1;
+  text-transform: capitalize;
+}
+
+.history-group .table-wrapper {
+  border-top: 1px solid var(--border);
+}

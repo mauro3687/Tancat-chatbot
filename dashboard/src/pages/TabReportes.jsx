@@ -101,7 +101,7 @@ function HistogramaDuracion({ reservas }) {
       </div>
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--overlay-06)" />
           <XAxis dataKey="duracion" tick={{ fontSize: 12 }} />
           <YAxis allowDecimals={false} tick={{ fontSize: 11 }} label={{ value: "Turnos", angle: -90, position: "insideLeft", fontSize: 11 }} />
           <Tooltip formatter={(v) => [`${v} turnos`, "Cantidad"]} contentStyle={{ fontSize: 12 }} />
@@ -232,7 +232,7 @@ function WaterfallIngresos({ reservas, ventas }) {
       </div>
       <ResponsiveContainer width="100%" height={230}>
         <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--overlay-06)" />
           <XAxis dataKey="label" tick={{ fontSize: 11 }} />
           <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11 }} />
           <Tooltip
@@ -373,7 +373,7 @@ function GaugeOcupacion({ reservas }) {
       <div className="gauge-wrap">
         <svg viewBox="0 0 180 100" className="gauge-svg">
           <path d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
-            fill="none" stroke="rgba(255,255,255,0.10)" strokeWidth="14" strokeLinecap="round" />
+            fill="none" stroke="var(--overlay-10)" strokeWidth="14" strokeLinecap="round" />
           <path d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`}
             fill="none" stroke={color} strokeWidth="14" strokeLinecap="round"
             strokeDasharray={`${circum} ${circum}`}
@@ -381,9 +381,9 @@ function GaugeOcupacion({ reservas }) {
             style={{ transition: "stroke-dashoffset 0.8s ease, stroke 0.4s" }}
           />
           <text x={cx} y={cy - 4} textAnchor="middle" fontSize="28" fontWeight="800" fill={color}>{pct}%</text>
-          <text x={cx} y={cy + 14} textAnchor="middle" fontSize="10" fill="#8B92A8">de la meta</text>
-          <text x={cx - radius} y={cy + 18} textAnchor="middle" fontSize="10" fill="#8B92A8">0%</text>
-          <text x={cx + radius} y={cy + 18} textAnchor="middle" fontSize="10" fill="#8B92A8">100%</text>
+          <text x={cx} y={cy + 14} textAnchor="middle" fontSize="10" fill="var(--text-secondary)">de la meta</text>
+          <text x={cx - radius} y={cy + 18} textAnchor="middle" fontSize="10" fill="var(--text-secondary)">0%</text>
+          <text x={cx + radius} y={cy + 18} textAnchor="middle" fontSize="10" fill="var(--text-secondary)">100%</text>
         </svg>
         <div className="gauge-legend">
           {[["≥80%", "#00C49A", "Meta alcanzada"], ["50–79%", "#F0A030", "En progreso"], ["<50%", "#F04D6A", "Por debajo"]].map(([r, c, l]) => (
@@ -460,7 +460,7 @@ function AreaIngresosCategoria({ reservas, ventas }) {
       </div>
       <ResponsiveContainer width="100%" height={230}>
         <AreaChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--overlay-06)" />
           <XAxis dataKey="semana" tick={{ fontSize: 12 }} />
           <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}K`} />
           <Tooltip formatter={(v) => [`$${v}K`, ""]} contentStyle={{ fontSize: 12 }} />
@@ -513,7 +513,7 @@ function TurnosPorDia({ reservas }) {
       </div>
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--overlay-06)" />
           <XAxis dataKey="dia" tick={{ fontSize: 12 }} />
           <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
           <Tooltip formatter={(v) => [`${v} turnos`, "Reservas"]} contentStyle={{ fontSize: 12 }} />
@@ -570,7 +570,7 @@ function TopClientes({ reservas, clientes }) {
       ) : (
         <ResponsiveContainer width="100%" height={Math.max(180, data.length * 36)}>
           <BarChart layout="vertical" data={data} margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
-            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(255,255,255,0.06)" />
+            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--overlay-06)" />
             <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
             <YAxis type="category" dataKey="nombre" width={110} tick={{ fontSize: 11 }} />
             <Tooltip formatter={(v) => [`${v} reservas`, "Cantidad"]} contentStyle={{ fontSize: 12 }} />
@@ -630,7 +630,7 @@ function CancelacionesPorCancha({ reservas }) {
       ) : (
         <ResponsiveContainer width="100%" height={Math.max(180, data.length * 40)}>
           <BarChart layout="vertical" data={data} margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
-            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(255,255,255,0.06)" />
+            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--overlay-06)" />
             <XAxis type="number" unit="%" domain={[0, 100]} tick={{ fontSize: 11 }} />
             <YAxis type="category" dataKey="cancha" width={110} tick={{ fontSize: 11 }} />
             <Tooltip
@@ -691,7 +691,7 @@ function ReservasPorHora({ reservas }) {
       </div>
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--overlay-06)" />
           <XAxis dataKey="franja" tick={{ fontSize: 11 }} />
           <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
           <Tooltip formatter={(v) => [`${v} turnos`, "Reservas"]} contentStyle={{ fontSize: 12 }} />

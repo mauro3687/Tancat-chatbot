@@ -79,3 +79,9 @@
   border-radius: 20px;
   border: 1px solid var(--gray-200);
 }
+
+/* ── Responsive ─────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .config-preview-grid    { grid-template-columns: 1fr; gap: 1rem; }
+  .config-header-actions  { flex-wrap: wrap; }
+}
