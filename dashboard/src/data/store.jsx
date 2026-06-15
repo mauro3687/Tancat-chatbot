@@ -2,10 +2,23 @@
 
 import { createContext, useContext, useState, useEffect } from "react";
 import {
-  collection, onSnapshot, addDoc, updateDoc, deleteDoc,
-  doc, serverTimestamp, arrayUnion
+  collection, onSnapshot, addDoc, setDoc, updateDoc, deleteDoc,
+  doc, serverTimestamp, arrayUnion, runTransaction
 } from "firebase/firestore";
 import { db } from "../firebase.js";
+
+// ── IDs secuenciales (1, 2, 3...) por colección, vía contador en config/counters ──
+async function nextSequentialId(colName) {
+  const counterRef = doc(db, "config", "counters");
+  const next = await runTransaction(db, async (tx) => {
+    const snap = await tx.get(counterRef);
+    const current = snap.exists() ? (snap.data()[colName] || 0) : 0;
+    const value = current + 1;
+    tx.set(counterRef, { [colName]: value }, { merge: true });
+    return value;
+  });
+  return String(next);
+}
 
 // ── Constantes del negocio (no van a Firestore) ───────────────────────────────
 export const SERVICIOS = [
@@ -105,11 +118,12 @@ export function StoreProvider({ children }) {
 
   // ── RESERVAS ──────────────────────────────────────────────────────────────
   const addReserva = async (data) => {
-    const ref = await addDoc(collection(db, "reservas"), {
+    const id = await nextSequentialId("reservas");
+    await setDoc(doc(db, "reservas", id), {
       ...data,
       creadoEn: serverTimestamp(),
     });
-    return ref.id;
+    return id;
   };
 
   const updateReserva = async (id, data) => {
@@ -125,12 +139,13 @@ export function StoreProvider({ children }) {
 
   // ── CLIENTES ──────────────────────────────────────────────────────────────
   const addCliente = async (data) => {
-    const ref = await addDoc(collection(db, "clientes"), {
+    const id = await nextSequentialId("clientes");
+    await setDoc(doc(db, "clientes", id), {
       ...data,
       reservas: 0,
       creadoEn: serverTimestamp(),
     });
-    return ref.id;
+    return id;
   };
 
   const updateCliente = async (id, data) => {
@@ -181,11 +196,12 @@ export function StoreProvider({ children }) {
 
   // ── VENTAS ────────────────────────────────────────────────────────────────
   const addVenta = async (data) => {
-    const ref = await addDoc(collection(db, "ventas"), {
+    const id = await nextSequentialId("ventas");
+    await setDoc(doc(db, "ventas", id), {
       ...data,
       creadoEn: serverTimestamp(),
     });
-    return ref.id;
+    return id;
   };
 
   const updateVenta = async (id, data) => {
@@ -201,7 +217,8 @@ export function StoreProvider({ children }) {
 
   // ── STOCK ─────────────────────────────────────────────────────────────────
   const addStock = async (data) => {
-    await addDoc(collection(db, "stock"), {
+    const id = await nextSequentialId("stock");
+    await setDoc(doc(db, "stock", id), {
       ...data,
       creadoEn: serverTimestamp(),
     });

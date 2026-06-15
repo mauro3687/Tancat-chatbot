@@ -12,3 +12,6 @@ dashboard/.firebase/
 
 # Logs
 *.log
+
+# Backups locales de migraciones
+dashboard/scripts/backup-*.json
