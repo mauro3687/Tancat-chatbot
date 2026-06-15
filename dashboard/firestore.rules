@@ -26,5 +26,20 @@ service cloud.firestore {
     match /stock/{docId} {
       allow read, write: if true;
     }
+
+    // Préstamos de equipamiento — público (el dashboard los gestiona sin Firebase Auth)
+    match /prestamos/{docId} {
+      allow read, write: if true;
+    }
+
+    // Bloqueos de horarios/canchas — público (el dashboard los gestiona sin Firebase Auth)
+    match /bloqueos/{docId} {
+      allow read, write: if true;
+    }
+
+    // Canchas creadas dinámicamente — público (el dashboard las gestiona sin Firebase Auth)
+    match /canchas/{docId} {
+      allow read, write: if true;
+    }
   }
 }
