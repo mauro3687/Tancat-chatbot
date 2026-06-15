@@ -1,7 +1,7 @@
 // src/components/Sidebar.jsx
 import { useState } from "react";
 import "../styles/Sidebar.css";
-import { useStore } from "../data/store.jsx";
+import { useStore } from "../context/StoreContext.jsx";
 
 const icons = {
   canchas: (
