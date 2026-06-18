@@ -124,79 +124,76 @@
   /* Canvas (page-body) más gris para no "encandilar"; sidebar y tarjetas
      un escalón más claras cada una, así se distingue dónde empieza
      cada sección sin depender solo de los bordes.                     */
-  --bg-base:        #E2E6EC;
-  --bg-sidebar:     #EDF0F4;
-  --bg-card:        #F7F9FB;
-  --bg-input:       #E2E6EC;
+  --bg-base:        #DDE1E8;
+  --bg-sidebar:     #F0F2F6;
+  --bg-card:        #FFFFFF;
+  --bg-input:       #F2F4F8;
 
-  --text-primary:   #1B1E27;
-  --text-secondary: #5B6275;
-  --text-muted:     #9AA0B4;
+  --text-primary:   #0F1623;
+  --text-secondary: #3B4559;
+  --text-muted:     #6B7590;
 
-  --border:         rgba(0, 0, 0, 0.09);
-  --border-strong:  rgba(0, 0, 0, 0.16);
+  --border:         rgba(0, 0, 0, 0.10);
+  --border-strong:  rgba(0, 0, 0, 0.18);
 
   /* Aliases de compatibilidad */
-  --gray-50:        #E2E6EC;
-  --gray-100:       #F7F9FB;
-  --gray-200:       rgba(0, 0, 0, 0.09);
-  --gray-400:       #9AA0B4;
-  --gray-600:       #5B6275;
-  --gray-800:       #1B1E27;
+  --gray-50:        #DDE1E8;
+  --gray-100:       #FFFFFF;
+  --gray-200:       rgba(0, 0, 0, 0.10);
+  --gray-400:       #6B7590;
+  --gray-600:       #3B4559;
+  --gray-800:       #0F1623;
 
-  /* ── Acentos y colores de estado — versiones suaves para tema claro:
-     más oscuras que el tema oscuro (para que el texto se lea sobre
-     fondos claros) pero sin llegar a tonos demasiado saturados/intensos. */
-  --accent:         #00966B;
-  --accent-hover:   #007A56;
-  --accent-muted:   rgba(0, 150, 107, 0.10);
-  --accent-border:  rgba(0, 150, 107, 0.20);
+  --accent:         #00CC84;
+  --accent-hover:   #00A86C;
+  --accent-muted:   rgba(0, 204, 132, 0.14);
+  --accent-border:  rgba(0, 204, 132, 0.30);
 
-  --red:            #D1455C;
-  --red-bg:         rgba(209, 69, 92, 0.10);
-  --amber:          #B5720A;
-  --amber-bg:       rgba(181, 114, 10, 0.10);
-  --blue:           #3F6FDB;
-  --blue-bg:        rgba(63, 111, 219, 0.10);
+  --red:            #E81840;
+  --red-bg:         rgba(232, 24, 64, 0.10);
+  --amber:          #E09000;
+  --amber-bg:       rgba(224, 144, 0, 0.10);
+  --blue:           #2860F0;
+  --blue-bg:        rgba(40, 96, 240, 0.10);
 
-  --green:          #00966B;
-  --green-light:    rgba(0, 150, 107, 0.10);
-  --green-dark:     #00966B;
-  --ambar-dark:     #B5720A;
-  --amber-light:    rgba(181, 114, 10, 0.10);
-  --red-light:      rgba(209, 69, 92, 0.10);
-  --blue-light:     rgba(63, 111, 219, 0.10);
+  --green:          #00CC84;
+  --green-light:    rgba(0, 204, 132, 0.14);
+  --green-dark:     #00CC84;
+  --ambar-dark:     #E09000;
+  --amber-light:    rgba(224, 144, 0, 0.10);
+  --red-light:      rgba(232, 24, 64, 0.10);
+  --blue-light:     rgba(40, 96, 240, 0.10);
 
-  --status-ok-bg:        rgba(0, 150, 107, 0.10);
-  --status-ok-text:      #00966B;
-  --status-ok-border:    rgba(0, 150, 107, 0.22);
+  --status-ok-bg:        rgba(0, 204, 132, 0.12);
+  --status-ok-text:      #007A4C;
+  --status-ok-border:    rgba(0, 204, 132, 0.30);
 
-  --status-warn-bg:      rgba(181, 114, 10, 0.10);
-  --status-warn-text:    #B5720A;
-  --status-warn-border:  rgba(181, 114, 10, 0.22);
+  --status-warn-bg:      rgba(224, 144, 0, 0.12);
+  --status-warn-text:    #8A5C00;
+  --status-warn-border:  rgba(224, 144, 0, 0.30);
 
-  --status-error-bg:     rgba(209, 69, 92, 0.10);
-  --status-error-text:   #D1455C;
-  --status-error-border: rgba(209, 69, 92, 0.22);
+  --status-error-bg:     rgba(232, 24, 64, 0.10);
+  --status-error-text:   #C0102C;
+  --status-error-border: rgba(232, 24, 64, 0.28);
 
-  --status-neutral-bg:     rgba(0, 0, 0, 0.04);
-  --status-neutral-text:   #6B7184;
-  --status-neutral-border: rgba(0, 0, 0, 0.10);
+  --status-neutral-bg:     rgba(0, 0, 0, 0.05);
+  --status-neutral-text:   #6B7590;
+  --status-neutral-border: rgba(0, 0, 0, 0.12);
 
-  --promo-active-bg:     rgba(63, 111, 219, 0.08);
-  --promo-active-text:   #3F6FDB;
-  --promo-active-accent: rgba(63, 111, 219, 0.22);
+  --promo-active-bg:     rgba(40, 96, 240, 0.10);
+  --promo-active-text:   #1848C0;
+  --promo-active-accent: rgba(40, 96, 240, 0.28);
 
-  --promo-offer-bg:      rgba(181, 114, 10, 0.08);
-  --promo-offer-text:    #B5720A;
-  --promo-offer-accent:  rgba(181, 114, 10, 0.22);
+  --promo-offer-bg:      rgba(224, 144, 0, 0.10);
+  --promo-offer-text:    #8A5C00;
+  --promo-offer-accent:  rgba(224, 144, 0, 0.28);
 
-  --promo-new-bg:        rgba(0, 150, 107, 0.08);
-  --promo-new-text:      #00966B;
-  --promo-new-accent:    rgba(0, 150, 107, 0.22);
+  --promo-new-bg:        rgba(0, 204, 132, 0.12);
+  --promo-new-text:      #007A4C;
+  --promo-new-accent:    rgba(0, 204, 132, 0.28);
 
-  --promo-expired-bg:     rgba(0, 0, 0, 0.03);
-  --promo-expired-accent: rgba(0, 0, 0, 0.08);
+  --promo-expired-bg:     rgba(0, 0, 0, 0.04);
+  --promo-expired-accent: rgba(0, 0, 0, 0.10);
 
   --overlay-02:  rgba(0, 0, 0, 0.035);
   --overlay-025: rgba(0, 0, 0, 0.04);

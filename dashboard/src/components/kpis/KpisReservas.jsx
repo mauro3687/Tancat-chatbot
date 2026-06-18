@@ -1,5 +1,5 @@
 // src/components/kpis/KpisReservas.jsx — KPIs visuales para el módulo de Reservas
-import { useMemo, useState } from "react";
+import { useMemo, useState, Fragment } from "react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from "recharts";
@@ -28,15 +28,15 @@ function HeatmapOcupacion({ reservas }) {
 
   return (
     <div className="kpi-card-full">
-      <div className="kpi-title">Mapa de calor — Días y horarios de mayor ocupación</div>
+      <div className="kpi-title">Días y horarios de mayor ocupación</div>
       <div className="kpi-sub">Cantidad de reservas activas por franja horaria</div>
       <div className="heatmap-wrap">
         <div className="heatmap-grid" style={{ "--cols": HORAS.length + 1 }}>
           <div className="hm-cell hm-header" />
           {HORAS.map((h) => <div key={h} className="hm-cell hm-header">{h}</div>)}
           {DIAS.map((dia, di) => (
-            <>
-              <div key={`lbl-${dia}`} className="hm-cell hm-row-label">{dia}</div>
+            <Fragment key={dia}>
+              <div className="hm-cell hm-row-label">{dia}</div>
               {HORAS.map((_, hi) => {
                 const val   = matrix[di][hi];
                 const alpha = 0.08 + (val / maxVal) * 0.87;
@@ -51,7 +51,7 @@ function HeatmapOcupacion({ reservas }) {
                   </div>
                 );
               })}
-            </>
+            </Fragment>
           ))}
         </div>
         <div className="heatmap-legend">
@@ -87,8 +87,8 @@ function AreaApilada({ reservas }) {
 
   return (
     <div className="kpi-card-half">
-      <div className="kpi-title">Reservas por tipo de deporte</div>
-      <div className="kpi-sub">Evolución semanal — últimas 5 semanas</div>
+      <div className="kpi-title">Reservas por deporte</div>
+      <div className="kpi-sub">Evolución semanal - últimas 5 semanas</div>
       <ResponsiveContainer width="100%" height={200}>
         <AreaChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.08)" />
